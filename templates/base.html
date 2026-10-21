@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Scheduler{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Roboto', 'system-ui', 'sans-serif'] },
+          colors: {
+            md: {
+              primary: '#6750A4',
+              'on-primary': '#FFFFFF',
+              'primary-container': '#EADDFF',
+              'on-primary-container': '#21005D',
+              secondary: '#625B71',
+              'on-secondary': '#FFFFFF',
+              'secondary-container': '#E8DEF8',
+              'on-secondary-container': '#1D192B',
+              tertiary: '#7D5260',
+              surface: '#FEF7FF',
+              'surface-variant': '#E7E0EC',
+              outline: '#79747E',
+              error: '#B3261E',
+              'error-container': '#F9DEDC',
+              'on-error-container': '#410E0B',
+            }
+          },
+          boxShadow: {
+            'md-1': '0px 1px 3px 1px rgba(0,0,0,0.15), 0px 1px 2px 0px rgba(0,0,0,0.3)',
+            'md-2': '0px 2px 6px 2px rgba(0,0,0,0.15), 0px 1px 2px 0px rgba(0,0,0,0.3)',
+            'md-3': '0px 4px 8px 3px rgba(0,0,0,0.15), 0px 1px 3px 0px rgba(0,0,0,0.3)',
+          },
+          borderRadius: {
+            '4xl': '28px',
+            '5xl': '32px',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #FEF7FF; color: #1D1B20; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+    .expressive-card {
+      border-radius: 28px;
+      background: #FEF7FF;
+      box-shadow: 0px 2px 6px 2px rgba(0,0,0,0.15), 0px 1px 2px 0px rgba(0,0,0,0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .expressive-card:hover { transform: translateY(-2px); box-shadow: 0px 4px 8px 3px rgba(0,0,0,0.15), 0px 1px 3px 0px rgba(0,0,0,0.3); }
+    .btn-primary {
+      background: linear-gradient(135deg, #6750A4 0%, #7F67BE 100%);
+      color: white;
+      border-radius: 9999px;
+      padding: 12px 24px;
+      font-weight: 500;
+      box-shadow: 0px 1px 3px 1px rgba(0,0,0,0.15);
+      transition: all 0.2s ease;
+    }
+    .btn-primary:hover { box-shadow: 0px 2px 6px 2px rgba(0,0,0,0.2); transform: translateY(-1px); }
+    .input-md {
+      border: 1px solid #79747E;
+      border-radius: 16px;
+      background: transparent;
+      padding: 14px 18px;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .input-md:focus { border-color: #6750A4; box-shadow: 0 0 0 3px rgba(103, 80, 164, 0.15); }
+    .chip {
+      border-radius: 9999px;
+      padding: 6px 14px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col">
+  {% if current_user.is_authenticated %}
+  <header class="sticky top-0 z-10 bg-md-surface/95 backdrop-blur border-b border-md-surface-variant px-6 py-4 flex items-center justify-between">
+    <a href="{{ url_for('index') }}" class="text-2xl font-bold text-md-on-primary-container tracking-tight flex items-center gap-2">
+      <span class="material-symbols-outlined text-md-primary">event</span>
+      Scheduler
+    </a>
+    <div class="flex items-center gap-2 md:gap-4">
+      {% if not current_user.is_admin %}
+      <a href="{{ url_for('my_events') }}" class="px-3 py-2 rounded-full text-md-on-primary-container font-medium hover:bg-md-primary-container transition flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">event_available</span>
+        Mis eventos
+      </a>
+      {% endif %}
+      <span class="text-md-secondary text-sm font-medium hidden md:inline">{{ current_user.username }}</span>
+      <a href="{{ url_for('logout') }}" class="px-3 py-2 rounded-full text-md-primary font-medium hover:bg-md-primary-container transition flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">logout</span>
+        Salir
+      </a>
+    </div>
+  </header>
+  {% endif %}
+
+  <main class="flex-1 w-full max-w-6xl mx-auto p-6">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-3 mb-8">
+          {% for category, message in messages %}
+            <div class="rounded-2xl px-5 py-3 text-sm font-medium flex items-center gap-3 {{ 'bg-md-error-container text-md-error' if category == 'error' else 'bg-green-100 text-green-900' }}">
+              <span class="material-symbols-outlined">{{ 'error' if category == 'error' else 'check_circle' }}</span>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

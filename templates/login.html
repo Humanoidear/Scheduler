@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Iniciar sesión · Scheduler{% endblock %}
+{% block content %}
+<div class="min-h-[85vh] flex items-center justify-center">
+  <div class="w-full max-w-md expressive-card p-10">
+    <div class="text-center mb-8">
+      <div class="w-16 h-16 rounded-3xl bg-md-primary-container text-md-on-primary-container flex items-center justify-center mx-auto mb-4">
+        <span class="material-symbols-outlined text-4xl">event</span>
+      </div>
+      <h1 class="text-4xl font-bold tracking-tight text-md-on-primary-container mb-2">Scheduler</h1>
+      <p class="text-md-secondary">Ingresa con tu usuario y contraseña</p>
+    </div>
+    <form method="POST" action="{{ url_for('login') }}" class="space-y-5">
+      {{ form.hidden_tag() }}
+      <div>
+        <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.username.label }}</label>
+        {{ form.username(class="input-md w-full", placeholder="usuario") }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.password.label }}</label>
+        {{ form.password(class="input-md w-full", placeholder="••••••••") }}
+      </div>
+      <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined">login</span>
+        {{ form.submit.label.text }}
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

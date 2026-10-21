@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Eventos · Scheduler{% endblock %}
+{% block content %}
+<div class="space-y-8">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h2 class="text-3xl font-bold text-md-on-primary-container">Próximos eventos</h2>
+      <p class="text-md-secondary">Selecciona una fecha en el calendario para inscribirte</p>
+    </div>
+    <div class="flex items-center gap-2 bg-md-surface-variant/50 rounded-full p-1">
+      <a href="{{ url_for('user_events', year=calendar.prev_year, month=calendar.prev_month) }}" class="p-2 rounded-full hover:bg-md-surface-variant transition text-md-on-primary-container">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </a>
+      <span class="px-4 font-bold text-md-on-primary-container min-w-[140px] text-center">{{ calendar.month_name }} {{ calendar.year }}</span>
+      <a href="{{ url_for('user_events', year=calendar.next_year, month=calendar.next_month) }}" class="p-2 rounded-full hover:bg-md-surface-variant transition text-md-on-primary-container">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </a>
+    </div>
+  </div>
+
+  <section class="expressive-card p-6 md:p-8">
+    <div class="grid grid-cols-7 gap-2 mb-3">
+      {% for day_label in calendar.weekday_labels %}
+      <div class="text-center text-xs font-bold text-md-secondary uppercase tracking-wider py-2">{{ day_label }}</div>
+      {% endfor %}
+    </div>
+    <div class="grid grid-cols-7 gap-2">
+      {% for week in calendar.weeks %}
+        {% for day in week %}
+          {% if day %}
+            {% set has_events = day.event_dates|length > 0 %}
+            {% set has_signed_up = day.event_dates|selectattr('signed_up')|list|length > 0 %}
+            <a href="{{ '#dia-' ~ day.date.isoformat() }}" class="aspect-square rounded-2xl p-2 flex flex-col items-center justify-start transition relative
+              {{ 'bg-md-primary-container text-md-on-primary-container ring-2 ring-md-primary' if has_signed_up else '' }}
+              {{ 'bg-md-surface-variant hover:bg-md-secondary-container hover:text-md-on-secondary-container' if has_events and not has_signed_up else '' }}
+              {{ 'hover:bg-md-surface-variant text-md-on-primary-container' if not has_events else '' }}
+            ">
+              <span class="text-sm font-medium {{ 'font-bold' if day.is_today else '' }}">{{ day.day }}</span>
+              {% if day.is_today %}
+              <span class="absolute bottom-1 w-1 h-1 rounded-full bg-md-primary"></span>
+              {% endif %}
+              {% if has_events %}
+              <div class="flex gap-1 mt-1 flex-wrap justify-center">
+                {% for item in day.event_dates %}
+                <span class="w-1.5 h-1.5 rounded-full {{ 'bg-white' if has_signed_up and item.signed_up else 'bg-md-primary' }}"></span>
+                {% endfor %}
+              </div>
+              {% endif %}
+              {% if day.is_today %}
+              <span class="absolute bottom-1 w-1 h-1 rounded-full bg-md-primary"></span>
+              {% endif %}
+            </a>
+          {% else %}
+            <div class="aspect-square"></div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="space-y-6">
+    {% for event in events %}
+    <article class="expressive-card p-6 md:p-8" id="evento-{{ event.id }}">
+      <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+        <div>
+          <h3 class="text-2xl font-bold text-md-on-primary-container">{{ event.title }}</h3>
+          <p class="text-md-secondary mt-1">{{ event.description or 'Sin descripción' }}</p>
+        </div>
+        <span class="chip bg-md-secondary-container text-md-on-secondary-container">
+          {{ 'Puedes elegir varias fechas' if event.allow_multiple_signups else 'Solo una fecha por usuario' }}
+        </span>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for ed in event.dates %}
+        {% set signup = ed.signup_for(current_user) %}
+        <div id="dia-{{ ed.date.isoformat() }}" class="rounded-2xl p-4 border-2 transition
+          {{ 'bg-md-primary-container border-md-primary text-md-on-primary-container' if signup else ('bg-red-50 border-red-200 text-red-900' if ed.available_spots == 0 else 'bg-md-surface border-md-surface-variant hover:border-md-primary/30') }}">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <p class="text-2xl font-bold">{{ ed.date.day }}</p>
+              <p class="text-sm font-medium opacity-90">{{ meses_corto_es[ed.date.month] }} {{ ed.date.year }}</p>
+              <p class="text-xs opacity-80 mt-1">{{ dias_es[ed.date.weekday()] }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-bold">{{ ed.taken_spots }}/{{ ed.max_spots }}</p>
+              <p class="text-xs opacity-80">cupos</p>
+            </div>
+          </div>
+
+          {% if event.show_attendees_publicly and ed.signups.count() %}
+          <div class="text-xs opacity-80 mb-3">
+            <span class="font-medium">Inscritos:</span> {{ ed.signups|map(attribute='user.username')|join(', ') }}
+          </div>
+          {% endif %}
+
+          <div class="mt-auto">
+            {% if signup %}
+            <form method="POST" action="{{ url_for('cancel_signup', signup_id=signup.id) }}" onsubmit="return confirm('¿Cancelar tu inscripción?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="w-full py-2.5 rounded-full border-2 border-current text-sm font-bold hover:opacity-80 transition flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">close</span>
+                Cancelar
+              </button>
+            </form>
+            {% elif ed.available_spots > 0 %}
+            <form method="POST" action="{{ url_for('signup', event_id=event.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="date_id" value="{{ ed.id }}">
+              <button type="submit" class="btn-primary w-full text-sm py-2.5 flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">check_circle</span>
+                Inscribirme
+              </button>
+            </form>
+            {% else %}
+            <span class="w-full block py-2.5 rounded-full bg-red-100 text-red-900 text-sm font-bold text-center">
+              Cupo lleno
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="col-span-full text-center py-8 text-md-secondary rounded-2xl bg-md-surface-variant/30">
+          <span class="material-symbols-outlined text-4xl mb-2 opacity-50">calendar_month</span>
+          <p class="text-sm">Aún no hay fechas programadas.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </article>
+    {% else %}
+    <div class="text-center py-20 text-md-secondary">
+      <span class="material-symbols-outlined text-6xl mb-4 opacity-50">event_busy</span>
+      <p class="text-xl font-medium">No hay eventos próximos</p>
+      <p class="text-sm">Vuelve más tarde.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

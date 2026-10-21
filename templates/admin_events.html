@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Admin · Eventos · Scheduler{% endblock %}
+{% block content %}
+<div class="space-y-8">
+  <nav class="flex gap-3">
+    <a href="{{ url_for('admin_events') }}" class="chip bg-md-primary-container text-md-on-primary-container">Eventos</a>
+    <a href="{{ url_for('admin_users') }}" class="chip text-md-secondary hover:bg-md-surface-variant transition">Usuarios</a>
+  </nav>
+
+  <section class="expressive-card p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <span class="material-symbols-outlined text-md-primary text-3xl">add_circle</span>
+      <h2 class="text-2xl font-bold text-md-on-primary-container">Crear evento</h2>
+    </div>
+    <form method="POST" action="{{ url_for('admin_events') }}" class="space-y-5">
+      {{ form.hidden_tag() }}
+      <div class="grid md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.title.label }}</label>
+          {{ form.title(class="input-md w-full", placeholder="Ej. Examen final") }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.description.label }}</label>
+          {{ form.description(class="input-md w-full", rows=1, placeholder="Breve descripción") }}
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-6">
+        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-2xl bg-md-surface-variant/50 hover:bg-md-surface-variant transition">
+          {{ form.allow_multiple_signups(class="w-5 h-5 accent-md-primary rounded") }}
+          <span class="text-sm text-md-on-primary-container font-medium">{{ form.allow_multiple_signups.label.text }}</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-2xl bg-md-surface-variant/50 hover:bg-md-surface-variant transition">
+          {{ form.show_attendees_publicly(class="w-5 h-5 accent-md-primary rounded") }}
+          <span class="text-sm text-md-on-primary-container font-medium">{{ form.show_attendees_publicly.label.text }}</span>
+        </label>
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="btn-primary flex items-center gap-2">
+          <span class="material-symbols-outlined">event</span>
+          {{ form.submit.label.text }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <div class="space-y-5">
+    {% for event in events %}
+    <article class="expressive-card p-6 md:p-8" id="event-{{ event.id }}">
+      <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+        <div>
+          <h3 class="text-2xl font-bold text-md-on-primary-container">{{ event.title }}</h3>
+          <p class="text-md-secondary mt-1">{{ event.description or 'Sin descripción' }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="{{ url_for('event_pdf', event_id=event.id) }}" class="p-2.5 rounded-full text-md-primary hover:bg-md-primary-container transition" aria-label="Descargar PDF" title="Descargar PDF">
+            <span class="material-symbols-outlined">download</span>
+          </a>
+          <form method="POST" action="{{ url_for('admin_delete_event', event_id=event.id) }}" onsubmit="return confirm('¿Eliminar este evento y todas sus inscripciones?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="p-2.5 rounded-full text-md-error hover:bg-md-error-container transition" aria-label="Eliminar evento" data-event-id="{{ event.id }}">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mb-6">
+        <span class="chip bg-md-secondary-container text-md-on-secondary-container">
+          {{ 'Varias inscripciones permitidas' if event.allow_multiple_signups else 'Una inscripción por usuario' }}
+        </span>
+        <span class="chip bg-md-secondary-container text-md-on-secondary-container">
+          {{ 'Asistentes públicos' if event.show_attendees_publicly else 'Asistentes privados' }}
+        </span>
+      </div>
+
+      <div class="border-t border-md-surface-variant pt-6">
+        <h4 class="text-sm font-bold text-md-on-primary-container mb-4 flex items-center gap-2">
+          <span class="material-symbols-outlined text-md-primary">calendar_today</span>
+          Fechas
+        </h4>
+        {% if event.dates.count() %}
+        <div class="flex flex-wrap gap-3 mb-5">
+          {% for ed in event.dates %}
+          <div class="flex flex-col gap-1 px-4 py-3 rounded-2xl {{ 'bg-red-100 text-red-900' if ed.available_spots == 0 else 'bg-md-primary-container text-md-on-primary-container' }}">
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-bold">{{ dias_es[ed.date.weekday()][:3] }}, {{ ed.date.day }} {{ meses_corto_es[ed.date.month] }} {{ ed.date.year }}</span>
+              <span class="text-xs opacity-80">{{ ed.taken_spots }}/{{ ed.max_spots }} cupos</span>
+              <form method="POST" action="{{ url_for('admin_delete_event_date', event_id=event.id, date_id=ed.id) }}" onsubmit="return confirm('¿Eliminar esta fecha y todas sus inscripciones?')" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="ml-1 text-current hover:opacity-70">
+                  <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+              </form>
+            </div>
+            {% if ed.signups.count() %}
+            <div class="text-xs opacity-90">{{ ed.signups|map(attribute='user.username')|join(', ') }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-md-secondary text-sm mb-5">Aún no hay fechas agregadas.</p>
+        {% endif %}
+
+        {% set date_form = date_form_class(prefix='date_' ~ event.id ~ '_') %}
+        <form method="POST" action="{{ url_for('admin_add_event_date', event_id=event.id) }}" class="flex flex-wrap items-end gap-3 p-4 rounded-2xl bg-md-surface-variant/30">
+          {{ date_form.hidden_tag() }}
+          <div>
+            <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.date.label }}</label>
+            {{ date_form.date(class="input-md text-sm py-2 px-3") }}
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.max_spots.label }}</label>
+            {{ date_form.max_spots(class="input-md text-sm py-2 px-3", value=20) }}
+          </div>
+          <button type="submit" class="btn-primary text-sm py-2.5 px-4 flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">add</span>
+            {{ date_form.submit.label.text }}
+          </button>
+        </form>
+      </div>
+    </article>
+    {% else %}
+    <div class="text-center py-20 text-md-secondary">
+      <span class="material-symbols-outlined text-6xl mb-4 opacity-50">event_busy</span>
+      <p class="text-xl font-medium">Aún no hay eventos</p>
+      <p class="text-sm">Crea un evento para comenzar.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Inscripciones · {{ event.title }}</title>
+  <style>
+    @page { size: A4 landscape; margin: 2cm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+      color: #1D1B20;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid #6750A4;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 2rem;
+      color: #21005D;
+    }
+    .header .meta {
+      text-align: right;
+      font-size: 0.9rem;
+      color: #625B71;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: #EADDFF;
+      color: #21005D;
+      margin-right: 8px;
+    }
+    .description {
+      margin: 16px 0 24px;
+      color: #625B71;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid #E7E0EC;
+    }
+    th {
+      background: #6750A4;
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    tr:nth-child(even) { background: #FEF7FF; }
+    .date-header {
+      background: #EADDFF;
+      color: #21005D;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: 12px;
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .attendee-list { color: #1D1B20; }
+    .empty { color: #625B71; font-style: italic; }
+    .footer {
+      margin-top: 32px;
+      font-size: 0.8rem;
+      color: #79747E;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>{{ event.title }}</h1>
+      <div style="margin-top: 8px;">
+        <span class="badge">{{ 'Varias fechas por usuario' if event.allow_multiple_signups else 'Una fecha por usuario' }}</span>
+        <span class="badge">{{ 'Asistentes públicos' if event.show_attendees_publicly else 'Asistentes privados' }}</span>
+      </div>
+    </div>
+    <div class="meta">
+      <div>Generado el {{ now.strftime('%d/%m/%Y %H:%M') }}</div>
+      <div>Total de inscripciones: {{ total_signups }}</div>
+    </div>
+  </div>
+
+  {% if event.description %}
+  <div class="description">{{ event.description }}</div>
+  {% endif %}
+
+  {% for ed in event.dates %}
+  <div class="date-header">
+    <span>{{ dias_es[ed.date.weekday()] }}, {{ ed.date.day }} de {{ meses_es[ed.date.month] }} de {{ ed.date.year }}</span>
+    <span>{{ ed.taken_spots }} / {{ ed.max_spots }} cupos</span>
+  </div>
+
+  {% if ed.signups.count() %}
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 8%;">#</th>
+        <th>Usuario</th>
+        <th style="width: 25%;">Fecha de inscripción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for signup in ed.signups|sort(attribute='user.username') %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td class="attendee-list">{{ signup.user.username }}</td>
+        <td>{{ signup.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No hay inscripciones para esta fecha.</p>
+  {% endif %}
+  {% endfor %}
+
+  <div class="footer">
+    Scheduler — Reporte de inscripciones
+  </div>
+</body>
+</html>
