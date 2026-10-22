@@ -25,7 +25,17 @@ def _db_uri():
 app.config["SQLALCHEMY_DATABASE_URI"] = _db_uri()
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-me-in-production")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_size": 10,
+    "max_overflow": 20,
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
 app.config["WTF_CSRF_ENABLED"] = True
+
+
+def _hash_pw(password: str) -> str:
+    return generate_password_hash(password, method="pbkdf2:sha256:150000")
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -43,7 +53,7 @@ class User(db.Model):
     must_change_password = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    signups = db.relationship("Signup", backref="user", lazy="dynamic", cascade="all, delete-orphan")
+    signups = db.relationship("Signup", backref=db.backref("user", lazy="joined"), lazy="selectin", cascade="all, delete-orphan")
 
     @property
     def is_active(self):
@@ -70,38 +80,38 @@ class Event(db.Model):
     show_attendees_publicly = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    dates = db.relationship("EventDate", backref="event", lazy="dynamic", cascade="all, delete-orphan", order_by="EventDate.date, EventDate.time")
+    dates = db.relationship("EventDate", backref="event", lazy="selectin", cascade="all, delete-orphan", order_by="EventDate.date, EventDate.time")
 
 
 class EventDate(db.Model):
     __tablename__ = "event_dates"
     id = db.Column(db.Integer, primary_key=True)
-    event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=False)
-    date = db.Column(db.Date, nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=False, index=True)
+    date = db.Column(db.Date, nullable=False, index=True)
     time = db.Column(db.String(20), nullable=False, default="09:00")
     end_time = db.Column(db.String(20), nullable=False, default="10:00")
     max_spots = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    signups = db.relationship("Signup", backref="event_date", lazy="dynamic", cascade="all, delete-orphan")
+    signups = db.relationship("Signup", backref="event_date", lazy="selectin", cascade="all, delete-orphan")
 
     @property
     def taken_spots(self):
-        return self.signups.count()
+        return len(self.signups)
 
     @property
     def available_spots(self):
-        return max(0, self.max_spots - self.taken_spots)
+        return max(0, self.max_spots - len(self.signups))
 
     def signup_for(self, user):
-        return self.signups.filter_by(user_id=user.id).first()
+        return next((s for s in self.signups if s.user_id == user.id), None)
 
 
 class Signup(db.Model):
     __tablename__ = "signups"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    event_date_id = db.Column(db.Integer, db.ForeignKey("event_dates.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    event_date_id = db.Column(db.Integer, db.ForeignKey("event_dates.id"), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (db.UniqueConstraint("user_id", "event_date_id", name="unique_user_event_date"),)
@@ -157,15 +167,22 @@ def create_admin():
     if not admin:
         admin = User(
             username=admin_username,
-            password_hash=generate_password_hash(admin_password),
+            password_hash=_hash_pw(admin_password),
             is_admin=True,
             must_change_password=False,
         )
         db.session.add(admin)
+        db.session.commit()
     else:
-        admin.username = admin_username
-        admin.password_hash = generate_password_hash(admin_password)
-    db.session.commit()
+        changed = False
+        if admin.username != admin_username:
+            admin.username = admin_username
+            changed = True
+        if not check_password_hash(admin.password_hash, admin_password):
+            admin.password_hash = _hash_pw(admin_password)
+            changed = True
+        if changed:
+            db.session.commit()
 
 
 def admin_required(f):
@@ -250,7 +267,7 @@ def register():
         else:
             user = User(
                 username=username,
-                password_hash=generate_password_hash(form.pin.data.strip()),
+                password_hash=_hash_pw(form.pin.data.strip()),
                 is_admin=False,
                 must_change_password=False,
             )
@@ -283,7 +300,7 @@ def change_password():
         elif len(form.password.data) < 4:
             flash("La contraseña debe tener al menos 4 caracteres", "error")
         else:
-            current_user.password_hash = generate_password_hash(form.password.data)
+            current_user.password_hash = _hash_pw(form.password.data)
             current_user.must_change_password = False
             db.session.commit()
             flash("Contraseña actualizada", "success")
@@ -371,7 +388,7 @@ def admin_users():
         else:
             user = User(
                 username=username,
-                password_hash=generate_password_hash(form.password.data),
+                password_hash=_hash_pw(form.password.data),
                 must_change_password=True,
             )
             db.session.add(user)
@@ -529,7 +546,7 @@ def event_pdf(event_id):
     event = db.session.get(Event, event_id)
     if not event:
         abort(404)
-    total_signups = sum(ed.signups.count() for ed in event.dates)
+    total_signups = sum(len(ed.signups) for ed in event.dates)
     html = render_template("event_pdf.html", event=event, total_signups=total_signups, now=datetime.utcnow())
     pdf = HTML(string=html).write_pdf()
     response = make_response(pdf)
@@ -552,16 +569,19 @@ def cancel_signup(signup_id):
     return redirect(url_for("user_events"))
 
 
-def create_app():
+def init_db():
     with app.app_context():
         db.create_all()
         db.session.execute(db.text("ALTER TABLE event_dates ADD COLUMN IF NOT EXISTS time VARCHAR(20) NOT NULL DEFAULT '09:00'"))
         db.session.execute(db.text("ALTER TABLE event_dates ADD COLUMN IF NOT EXISTS end_time VARCHAR(20) NOT NULL DEFAULT '10:00'"))
         db.session.commit()
         create_admin()
+
+
+def create_app():
     return app
 
 
 if __name__ == "__main__":
-    create_app()
+    init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)

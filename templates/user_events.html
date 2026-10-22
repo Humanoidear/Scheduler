@@ -219,7 +219,7 @@
                       <span class="material-symbols-outlined text-lg">close</span>
                     </button>
                   </div>
-                  {% if ed.signups.count() %}
+                  {% if ed.signups|length %}
                   <ul class="space-y-2 max-h-64 overflow-y-auto pr-1">
                     {% for s in ed.signups|sort(attribute='user.username') %}
                     <li class="flex items-center gap-3 p-2.5 rounded-2xl bg-md-surface-container border border-md-outline-variant/40">

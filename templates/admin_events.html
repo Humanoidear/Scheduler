@@ -86,7 +86,7 @@
           <span class="material-symbols-outlined icon-filled text-md-primary">calendar_today</span>
           Horarios programados
         </h4>
-        {% if event.dates.count() %}
+        {% if event.dates|length %}
         <div class="flex flex-wrap gap-3 mb-5">
           {% for ed in event.dates %}
           <div class="flex flex-col gap-1.5 px-4 py-3 rounded-2xl {{ 'bg-md-error-container text-md-on-error-container' if ed.available_spots == 0 else 'bg-md-primary-container text-md-on-primary-container' }}">
@@ -104,7 +104,7 @@
                 </button>
               </form>
             </div>
-            {% if ed.signups.count() %}
+            {% if ed.signups|length %}
             <div class="text-xs opacity-90 font-medium">{{ ed.signups|map(attribute='user.username')|join(', ') }}</div>
             {% endif %}
           </div>

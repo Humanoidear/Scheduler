@@ -106,7 +106,7 @@
     <span>{{ ed.taken_spots }} / {{ ed.max_spots }} cupos</span>
   </div>
 
-  {% if ed.signups.count() %}
+  {% if ed.signups|length %}
   <table>
     <thead>
       <tr>
