@@ -140,7 +140,8 @@ class UserForm(FlaskForm):
 def create_admin():
     admin_username = os.environ.get("ADMIN_USERNAME", "admin")
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin")
-    if not User.query.filter_by(is_admin=True).first():
+    admin = User.query.filter_by(is_admin=True).first()
+    if not admin:
         admin = User(
             username=admin_username,
             password_hash=generate_password_hash(admin_password),
@@ -148,7 +149,10 @@ def create_admin():
             must_change_password=False,
         )
         db.session.add(admin)
-        db.session.commit()
+    else:
+        admin.username = admin_username
+        admin.password_hash = generate_password_hash(admin_password)
+    db.session.commit()
 
 
 def admin_required(f):
