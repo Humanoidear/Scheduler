@@ -3,7 +3,10 @@ import calendar
 from datetime import date, datetime, timedelta
 from functools import wraps
 
+from dotenv import load_dotenv
 from flask import Flask, abort, flash, make_response, redirect, render_template, request, url_for
+
+load_dotenv()
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm, CSRFProtect
