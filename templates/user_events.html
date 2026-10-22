@@ -4,31 +4,29 @@
 <div class="space-y-6">
   <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
     <div>
-      <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-md-primary bg-md-primary-container/70 px-3 py-1 rounded-full mb-2">
-      <h1 class="text-2xl md:text-4xl font-bold text-md-on-primary-container tracking-tight">Eventos disponibles</h1>
+      <h1 class="text-3xl md:text-4xl font-extrabold font-display text-md-on-surface tracking-tight">Agenda y Eventos</h1>
     </div>
   </div>
 
   <div class="grid lg:grid-cols-12 gap-6 lg:gap-8 items-start">
     <!-- Left Column: Calendar + Agenda View (Sticky on Desktop) -->
     <aside class="lg:col-span-5 lg:sticky lg:top-20 space-y-5">
-      <section class="expressive-card p-4 md:p-6">
+      <section class="expressive-card p-5 md:p-6">
         <!-- Calendar Header -->
         <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <div class="w-10 h-10 rounded-2xl bg-md-primary-container text-md-on-primary-container flex items-center justify-center">
-              <span class="material-symbols-outlined">calendar_month</span>
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-[16px] bg-md-primary-container text-md-on-primary-container flex items-center justify-center">
+              <span class="material-symbols-outlined icon-filled">calendar_month</span>
             </div>
             <div>
-              <h2 class="text-lg font-bold text-md-on-primary-container leading-tight">{{ calendar.month_name }} {{ calendar.year }}</h2>
-              <p class="text-xs text-md-secondary">Calendario mensual</p>
+              <h2 class="text-lg font-extrabold font-display text-md-on-surface leading-tight">{{ calendar.month_name }} {{ calendar.year }}</h2>
             </div>
           </div>
-          <div class="flex items-center gap-1 bg-md-surface-variant/60 rounded-full p-1">
-            <a href="{{ url_for('user_events', year=calendar.prev_year, month=calendar.prev_month) }}" class="w-9 h-9 rounded-full hover:bg-white transition text-md-on-primary-container flex items-center justify-center" aria-label="Mes anterior">
+          <div class="flex items-center gap-1 bg-md-surface-high rounded-full p-1">
+            <a href="{{ url_for('user_events', year=calendar.prev_year, month=calendar.prev_month) }}" class="w-9 h-9 rounded-full hover:bg-md-primary-container hover:text-md-on-primary-container transition text-md-on-surface flex items-center justify-center" aria-label="Mes anterior">
               <span class="material-symbols-outlined text-xl">chevron_left</span>
             </a>
-            <a href="{{ url_for('user_events', year=calendar.next_year, month=calendar.next_month) }}" class="w-9 h-9 rounded-full hover:bg-white transition text-md-on-primary-container flex items-center justify-center" aria-label="Mes siguiente">
+            <a href="{{ url_for('user_events', year=calendar.next_year, month=calendar.next_month) }}" class="w-9 h-9 rounded-full hover:bg-md-primary-container hover:text-md-on-primary-container transition text-md-on-surface flex items-center justify-center" aria-label="Mes siguiente">
               <span class="material-symbols-outlined text-xl">chevron_right</span>
             </a>
           </div>
@@ -37,7 +35,7 @@
         <!-- Compact Month Grid -->
         <div class="grid grid-cols-7 gap-1 mb-2">
           {% for day_label in calendar.weekday_labels %}
-          <div class="text-center text-[11px] font-bold text-md-secondary uppercase tracking-wider py-1">{{ day_label }}</div>
+          <div class="text-center text-[11px] font-bold text-md-on-surface-variant uppercase tracking-wider py-1">{{ day_label }}</div>
           {% endfor %}
         </div>
         <div class="grid grid-cols-7 gap-1.5">
@@ -47,16 +45,16 @@
                 {% set has_events = day.event_dates|length > 0 %}
                 {% set has_signed_up = day.event_dates|selectattr('signed_up')|list|length > 0 %}
                 <a href="{{ '#agenda-' ~ day.date.isoformat() if has_events else '#dia-' ~ day.date.isoformat() }}"
-                   class="aspect-square rounded-2xl p-1 flex flex-col items-center justify-center transition relative min-h-[42px]
-                   {{ 'bg-md-primary text-white shadow-md-1 font-bold' if has_signed_up else '' }}
-                   {{ 'bg-md-primary-container/80 text-md-on-primary-container hover:bg-md-primary-container font-semibold' if has_events and not has_signed_up else '' }}
-                   {{ 'hover:bg-md-surface-variant/60 text-md-on-primary-container' if not has_events else '' }}
-                   {{ 'ring-2 ring-md-primary ring-offset-1' if day.is_today else '' }}">
+                   class="aspect-square rounded-[16px] active:rounded-[10px] p-1 flex flex-col items-center justify-center transition-all relative min-h-[42px]
+                   {{ 'bg-md-primary text-md-on-primary font-bold' if has_signed_up else '' }}
+                   {{ 'bg-md-primary-container text-md-on-primary-container hover:brightness-95 font-bold' if has_events and not has_signed_up else '' }}
+                   {{ 'hover:bg-md-surface-high text-md-on-surface' if not has_events else '' }}
+                   {{ 'ring-2 ring-md-primary ring-offset-2 ring-offset-md-surface-low' if day.is_today else '' }}">
                   <span class="text-xs leading-none">{{ day.day }}</span>
                   {% if has_events %}
                   <div class="flex gap-0.5 mt-1 justify-center">
                     {% for item in day.event_dates[:3] %}
-                    <span class="w-1.5 h-1.5 rounded-full {{ 'bg-white' if has_signed_up else 'bg-md-primary' }}"></span>
+                    <span class="w-1.5 h-1.5 rounded-full {{ 'bg-md-on-primary' if has_signed_up else 'bg-md-primary' }}"></span>
                     {% endfor %}
                   </div>
                   {% endif %}
@@ -69,60 +67,60 @@
         </div>
 
         <!-- Legend -->
-        <div class="flex items-center justify-center gap-4 mt-4 pt-3 border-t border-md-surface-variant/70 text-xs text-md-secondary">
-          <span class="flex items-center gap-1.5">
+        <div class="flex items-center justify-center gap-5 mt-4 pt-3 border-t border-md-outline-variant/60 text-xs text-md-on-surface-variant">
+          <span class="flex items-center gap-1.5 font-medium">
             <span class="w-2.5 h-2.5 rounded-full bg-md-primary"></span> Inscrito
           </span>
-          <span class="flex items-center gap-1.5">
+          <span class="flex items-center gap-1.5 font-medium">
             <span class="w-2.5 h-2.5 rounded-full bg-md-primary-container border border-md-primary"></span> Con horarios
           </span>
         </div>
 
         <!-- Agenda Timeline inside Left Panel -->
-        <div class="mt-5 pt-5 border-t border-md-surface-variant">
+        <div class="mt-5 pt-5 border-t border-md-outline-variant/60">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-bold text-md-on-primary-container uppercase tracking-wider flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-md-primary text-lg">view_agenda</span>
+            <h3 class="text-xs font-extrabold font-display text-md-on-surface uppercase tracking-wider flex items-center gap-1.5">
+              <span class="material-symbols-outlined icon-filled text-md-primary text-lg">view_agenda</span>
               Agenda de {{ calendar.month_name }}
             </h3>
-            <span class="text-xs font-medium text-md-secondary">{{ calendar.agenda_days|length }} días</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-md-surface-high text-xs font-bold text-md-on-surface-variant">{{ calendar.agenda_days|length }} días</span>
           </div>
 
           {% if calendar.agenda_days %}
           <div class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
             {% for day in calendar.agenda_days %}
-            <div id="agenda-{{ day.date.isoformat() }}" class="rounded-2xl bg-md-surface p-3 border border-md-surface-variant/80">
+            <div id="agenda-{{ day.date.isoformat() }}" class="rounded-2xl bg-md-surface-container p-3 border border-md-outline-variant/50">
               <div class="flex items-center gap-2.5 mb-2">
-                <div class="w-9 h-9 rounded-xl bg-md-primary-container text-md-on-primary-container flex flex-col items-center justify-center shrink-0">
-                  <span class="text-xs font-bold leading-none">{{ day.day }}</span>
-                  <span class="text-[9px] uppercase font-semibold">{{ meses_corto_es[day.date.month] }}</span>
+                <div class="w-10 h-10 rounded-[14px] bg-md-primary-container text-md-on-primary-container flex flex-col items-center justify-center shrink-0">
+                  <span class="text-xs font-extrabold leading-none">{{ day.day }}</span>
+                  <span class="text-[9px] uppercase font-bold">{{ meses_corto_es[day.date.month] }}</span>
                 </div>
                 <div>
-                  <p class="text-xs font-bold text-md-on-primary-container">{{ dias_es[day.date.weekday()] }}</p>
-                  <p class="text-[11px] text-md-secondary">{{ day.event_dates|length }} {{ 'horario' if day.event_dates|length == 1 else 'horarios' }}</p>
+                  <p class="text-xs font-bold text-md-on-surface">{{ dias_es[day.date.weekday()] }}</p>
+                  <p class="text-[11px] text-md-on-surface-variant">{{ day.event_dates|length }} {{ 'horario' if day.event_dates|length == 1 else 'horarios' }}</p>
                 </div>
               </div>
-              <div class="space-y-1.5 pl-2 border-l-2 border-md-primary/30 ml-4">
+              <div class="space-y-1.5 pl-2.5 border-l-2 border-md-primary/40 ml-4">
                 {% for item in day.event_dates %}
-                <a href="#slot-{{ item.date.id }}" class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-md-primary-container/40 transition group">
+                <a href="#slot-{{ item.date.id }}" class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-md-surface-high transition group">
                   <div class="min-w-0">
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1.5 flex-wrap">
                       <span class="inline-flex items-center gap-0.5 text-xs font-bold text-md-primary">
                         <span class="material-symbols-outlined text-[14px]">schedule</span>
                         {{ item.date.time }}–{{ item.date.end_time }}
                       </span>
-                      <span class="text-xs font-semibold text-md-on-primary-container truncate">{{ item.event.title }}</span>
+                      <span class="text-xs font-semibold text-md-on-surface truncate">{{ item.event.title }}</span>
                     </div>
                   </div>
                   <div class="shrink-0 flex items-center gap-1.5">
                     {% if item.signed_up %}
-                    <span class="px-2 py-0.5 rounded-full bg-md-primary text-white text-[10px] font-bold">Inscrito</span>
+                    <span class="px-2 py-0.5 rounded-full bg-md-primary text-md-on-primary text-[10px] font-bold">Inscrito</span>
                     {% elif item.date.available_spots == 0 %}
-                    <span class="px-2 py-0.5 rounded-full bg-red-100 text-red-900 text-[10px] font-bold">Lleno</span>
+                    <span class="px-2 py-0.5 rounded-full bg-md-error-container text-md-on-error-container text-[10px] font-bold">Lleno</span>
                     {% else %}
-                    <span class="px-2 py-0.5 rounded-full bg-md-secondary-container text-md-on-secondary-container text-[10px] font-semibold">{{ item.date.available_spots }} libres</span>
+                    <span class="px-2 py-0.5 rounded-full bg-md-secondary-container text-md-on-secondary-container text-[10px] font-bold">{{ item.date.available_spots }} libres</span>
                     {% endif %}
-                    <span class="material-symbols-outlined text-sm text-md-secondary group-hover:translate-x-0.5 transition">arrow_forward</span>
+                    <span class="material-symbols-outlined text-sm text-md-on-surface-variant group-hover:translate-x-0.5 transition">arrow_forward</span>
                   </div>
                 </a>
                 {% endfor %}
@@ -131,8 +129,8 @@
             {% endfor %}
           </div>
           {% else %}
-          <div class="text-center py-8 text-md-secondary bg-md-surface rounded-2xl border border-dashed border-md-surface-variant">
-            <span class="material-symbols-outlined text-3xl opacity-50 mb-1">event_note</span>
+          <div class="text-center py-8 text-md-on-surface-variant bg-md-surface-container rounded-2xl border border-dashed border-md-outline-variant">
+            <span class="material-symbols-outlined text-3xl opacity-60 mb-1">event_note</span>
             <p class="text-xs">No hay horarios programados en {{ calendar.month_name }}.</p>
           </div>
           {% endif %}
@@ -144,15 +142,15 @@
     <div class="lg:col-span-7 space-y-5">
       {% for event in events %}
       <article class="expressive-card p-5 md:p-7" id="evento-{{ event.id }}">
-        <div class="flex flex-wrap items-start justify-between gap-3 mb-5 pb-4 border-b border-md-surface-variant/70">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-5 pb-4 border-b border-md-outline-variant/60">
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2 flex-wrap mb-1">
-              <h2 class="text-xl md:text-2xl font-bold text-md-on-primary-container">{{ event.title }}</h2>
-              <span class="chip bg-md-secondary-container text-md-on-secondary-container text-xs">
+            <div class="flex items-center gap-2.5 flex-wrap mb-1">
+              <h2 class="text-xl md:text-2xl font-extrabold font-display text-md-on-surface">{{ event.title }}</h2>
+              <span class="chip bg-md-secondary-container text-md-on-secondary-container">
                 {{ 'Múltiples horarios permitidos' if event.allow_multiple_signups else '1 horario por persona' }}
               </span>
             </div>
-            <p class="text-md-secondary text-sm">{{ event.description or 'Selecciona un horario abajo para inscribirte.' }}</p>
+            <p class="text-md-on-surface-variant text-sm">{{ event.description or 'Selecciona un horario abajo para inscribirte.' }}</p>
           </div>
         </div>
 
@@ -160,42 +158,42 @@
           {% for ed in event.dates %}
           {% set signup = ed.signup_for(current_user) %}
           {% set pct = ((ed.taken_spots / ed.max_spots) * 100)|int if ed.max_spots > 0 else 100 %}
-          <div id="slot-{{ ed.id }}" class="slot-target rounded-2xl p-3.5 md:p-4 border-2 transition
-            {{ 'bg-md-primary-container/60 border-md-primary text-md-on-primary-container' if signup else ('bg-red-50/70 border-red-200 text-red-900' if ed.available_spots == 0 else 'bg-md-surface/70 border-md-surface-variant hover:border-md-primary/50') }}">
-            <div id="dia-{{ ed.date.isoformat() }}" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+          <div id="slot-{{ ed.id }}" class="slot-target rounded-[22px] p-4 border-2 transition
+            {{ 'bg-md-primary-container/50 border-md-primary text-md-on-surface' if signup else ('bg-md-error-container/40 border-md-error/50 text-md-on-surface' if ed.available_spots == 0 else 'bg-md-surface-container border-md-outline-variant/60 hover:border-md-primary/60') }}">
+            <div id="dia-{{ ed.date.isoformat() }}" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div class="flex items-center gap-3.5 min-w-0">
                 <!-- Date Badge -->
-                <div class="w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-sm
-                  {{ 'bg-md-primary text-white' if signup else 'bg-md-primary-container text-md-on-primary-container' }}">
-                  <span class="text-lg font-bold leading-none">{{ ed.date.day }}</span>
+                <div class="w-14 h-14 rounded-[18px] flex flex-col items-center justify-center shrink-0
+                  {{ 'bg-md-primary text-md-on-primary' if signup else 'bg-md-primary-container text-md-on-primary-container' }}">
+                  <span class="text-lg font-extrabold font-display leading-none">{{ ed.date.day }}</span>
                   <span class="text-[10px] font-bold uppercase mt-0.5">{{ meses_corto_es[ed.date.month] }}</span>
                 </div>
 
                 <!-- Date, Time & Capacity Info -->
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-bold text-sm md:text-base text-md-on-primary-container">{{ dias_es[ed.date.weekday()] }}</span>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-md-primary text-white text-xs font-bold">
+                    <span class="font-bold text-sm md:text-base text-md-on-surface">{{ dias_es[ed.date.weekday()] }}</span>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-md-primary text-md-on-primary text-xs font-bold">
                       <span class="material-symbols-outlined text-[14px]">schedule</span>
                       {{ ed.time }} – {{ ed.end_time }}
                     </span>
                     {% if signup %}
                     <span class="inline-flex items-center gap-1 text-xs font-bold text-md-primary">
-                      <span class="material-symbols-outlined text-sm">verified</span>
+                      <span class="material-symbols-outlined icon-filled text-sm">verified</span>
                       Inscrito
                     </span>
                     {% endif %}
                   </div>
 
-                  <div class="flex items-center gap-3 mt-1.5 flex-wrap">
-                    <div class="w-24 h-1.5 rounded-full bg-black/10 overflow-hidden">
-                      <div class="h-full rounded-full {{ 'bg-red-600' if ed.available_spots == 0 else 'bg-md-primary' }}" style="width: {{ pct }}%"></div>
+                  <div class="flex items-center gap-3 mt-2 flex-wrap">
+                    <div class="w-24 h-2 rounded-full bg-md-surface-highest overflow-hidden">
+                      <div class="h-full rounded-full {{ 'bg-md-error' if ed.available_spots == 0 else 'bg-md-primary' }}" style="width: {{ pct }}%"></div>
                     </div>
-                    <span class="text-xs font-medium opacity-85">
+                    <span class="text-xs font-medium text-md-on-surface-variant">
                       {{ ed.taken_spots }}/{{ ed.max_spots }} ocupados ({{ ed.available_spots }} libres)
                     </span>
                     {% if event.show_attendees_publicly %}
-                    <button type="button" onclick="document.getElementById('modal-asistentes-{{ ed.id }}').showModal()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-md-secondary-container text-md-on-secondary-container hover:bg-md-primary-container transition text-xs font-bold">
+                    <button type="button" onclick="document.getElementById('modal-asistentes-{{ ed.id }}').showModal()" class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-md-secondary-container text-md-on-secondary-container hover:bg-md-primary-container hover:text-md-on-primary-container transition text-xs font-bold">
                       <span class="material-symbols-outlined text-[15px]">group</span>
                       Asistentes ({{ ed.taken_spots }})
                     </button>
@@ -205,38 +203,38 @@
               </div>
 
               {% if event.show_attendees_publicly %}
-              <dialog id="modal-asistentes-{{ ed.id }}" onclick="if(event.target===this)this.close()" class="rounded-[28px] p-0 w-full max-w-md bg-md-surface text-md-on-primary-container shadow-md-3 backdrop:bg-black/40 backdrop:backdrop-blur-xs">
+              <dialog id="modal-asistentes-{{ ed.id }}" onclick="if(event.target===this)this.close()" class="rounded-[28px] p-0 w-full max-w-md bg-md-surface-high text-md-on-surface border border-md-outline-variant shadow-2xl backdrop:bg-black/50 backdrop:backdrop-blur-xs">
                 <div class="p-6">
                   <div class="flex items-start justify-between gap-4 mb-4">
                     <div>
-                      <h3 class="text-lg font-bold text-md-on-primary-container flex items-center gap-2">
-                        <span class="material-symbols-outlined text-md-primary">group</span>
+                      <h3 class="text-lg font-extrabold font-display text-md-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined icon-filled text-md-primary">group</span>
                         Asistentes inscritos
                       </h3>
-                      <p class="text-xs text-md-secondary mt-0.5">
+                      <p class="text-xs text-md-on-surface-variant mt-0.5">
                         {{ event.title }} · {{ dias_es[ed.date.weekday()] }} {{ ed.date.day }} {{ meses_corto_es[ed.date.month] }} ({{ ed.time }} – {{ ed.end_time }})
                       </p>
                     </div>
-                    <button type="button" onclick="this.closest('dialog').close()" class="w-8 h-8 rounded-full hover:bg-md-surface-variant flex items-center justify-center text-md-secondary">
+                    <button type="button" onclick="this.closest('dialog').close()" class="w-9 h-9 rounded-full hover:bg-md-surface-highest flex items-center justify-center text-md-on-surface-variant">
                       <span class="material-symbols-outlined text-lg">close</span>
                     </button>
                   </div>
                   {% if ed.signups.count() %}
                   <ul class="space-y-2 max-h-64 overflow-y-auto pr-1">
                     {% for s in ed.signups|sort(attribute='user.username') %}
-                    <li class="flex items-center gap-3 p-2.5 rounded-2xl bg-md-primary-container/50">
-                      <span class="w-8 h-8 rounded-xl bg-md-primary text-white text-xs font-bold flex items-center justify-center shrink-0">
+                    <li class="flex items-center gap-3 p-2.5 rounded-2xl bg-md-surface-container border border-md-outline-variant/40">
+                      <span class="w-8 h-8 rounded-xl bg-md-primary text-md-on-primary text-xs font-bold flex items-center justify-center shrink-0">
                         {{ s.user.username[0]|upper }}
                       </span>
-                      <span class="text-sm font-semibold text-md-on-primary-container">{{ s.user.username }}</span>
+                      <span class="text-sm font-semibold text-md-on-surface">{{ s.user.username }}</span>
                     </li>
                     {% endfor %}
                   </ul>
                   {% else %}
-                  <p class="text-sm text-md-secondary py-6 text-center">Aún no hay asistentes inscritos en este horario.</p>
+                  <p class="text-sm text-md-on-surface-variant py-6 text-center">Aún no hay asistentes inscritos en este horario.</p>
                   {% endif %}
                   <div class="mt-5 flex justify-end">
-                    <button type="button" onclick="this.closest('dialog').close()" class="px-5 py-2 rounded-full bg-md-primary text-white text-sm font-semibold">
+                    <button type="button" onclick="this.closest('dialog').close()" class="btn-primary py-2 px-5 min-h-[40px] text-sm">
                       Cerrar
                     </button>
                   </div>
@@ -249,7 +247,7 @@
                 {% if signup %}
                 <form method="POST" action="{{ url_for('cancel_signup', signup_id=signup.id) }}" onsubmit="return confirm('¿Cancelar tu inscripción?')">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-full border-2 border-md-error text-md-error hover:bg-md-error-container text-xs md:text-sm font-bold transition flex items-center justify-center gap-1.5 min-h-[44px]">
+                  <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-full active:rounded-2xl bg-md-error-container text-md-on-error-container hover:brightness-95 text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 min-h-[44px]">
                     <span class="material-symbols-outlined text-base">cancel</span>
                     <span>Cancelar</span>
                   </button>
@@ -264,7 +262,7 @@
                   </button>
                 </form>
                 {% else %}
-                <span class="w-full sm:w-auto px-4 py-2.5 rounded-full bg-red-100 text-red-900 text-xs md:text-sm font-bold text-center min-h-[44px] flex items-center justify-center">
+                <span class="w-full sm:w-auto px-4 py-2.5 rounded-full bg-md-error-container text-md-on-error-container text-xs md:text-sm font-bold text-center min-h-[44px] flex items-center justify-center">
                   Cupo lleno
                 </span>
                 {% endif %}
@@ -272,18 +270,18 @@
             </div>
           </div>
           {% else %}
-          <div class="text-center py-6 text-md-secondary rounded-2xl bg-md-surface-variant/30">
-            <span class="material-symbols-outlined text-3xl mb-1 opacity-50">schedule</span>
+          <div class="text-center py-6 text-md-on-surface-variant rounded-2xl bg-md-surface-container">
+            <span class="material-symbols-outlined text-3xl mb-1 opacity-60">schedule</span>
             <p class="text-sm">Aún no hay fechas ni horarios programados para este evento.</p>
           </div>
           {% endfor %}
         </div>
       </article>
       {% else %}
-      <div class="expressive-card text-center py-20 text-md-secondary p-6">
+      <div class="expressive-card text-center py-20 text-md-on-surface-variant p-6">
         <span class="material-symbols-outlined text-6xl mb-4 opacity-50">event_busy</span>
-        <p class="text-xl font-medium">No hay eventos activos</p>
-        <p class="text-sm">Vuelve más tarde para ver nuevos eventos.</p>
+        <p class="text-xl font-bold font-display text-md-on-surface">No hay eventos activos</p>
+        <p class="text-sm mt-1">Vuelve más tarde para ver nuevos eventos.</p>
       </div>
       {% endfor %}
     </div>

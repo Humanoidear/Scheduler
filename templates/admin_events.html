@@ -2,40 +2,48 @@
 {% block title %}Admin · Eventos · Scheduler{% endblock %}
 {% block content %}
 <div class="space-y-8">
-  <nav class="flex gap-3">
-    <a href="{{ url_for('admin_events') }}" class="chip bg-md-primary-container text-md-on-primary-container">Eventos</a>
-    <a href="{{ url_for('admin_users') }}" class="chip text-md-secondary hover:bg-md-surface-variant transition">Usuarios</a>
+  <nav class="flex gap-2.5">
+    <a href="{{ url_for('admin_events') }}" class="px-5 py-2.5 rounded-full bg-md-primary text-md-on-primary font-bold text-sm inline-flex items-center gap-2">
+      <span class="material-symbols-outlined icon-filled text-[18px]">event</span>
+      Eventos
+    </a>
+    <a href="{{ url_for('admin_users') }}" class="px-5 py-2.5 rounded-full bg-md-surface-high text-md-on-surface-variant hover:bg-md-secondary-container hover:text-md-on-secondary-container font-bold text-sm transition inline-flex items-center gap-2">
+      <span class="material-symbols-outlined text-[18px]">group</span>
+      Usuarios
+    </a>
   </nav>
 
-  <section class="expressive-card p-8">
+  <section class="expressive-card p-6 md:p-8">
     <div class="flex items-center gap-3 mb-6">
-      <span class="material-symbols-outlined text-md-primary text-3xl">add_circle</span>
-      <h2 class="text-2xl font-bold text-md-on-primary-container">Crear evento</h2>
+      <span class="w-11 h-11 rounded-[16px] bg-md-primary-container text-md-on-primary-container flex items-center justify-center">
+        <span class="material-symbols-outlined icon-filled">add_circle</span>
+      </span>
+      <h2 class="text-2xl font-extrabold font-display text-md-on-surface">Crear evento</h2>
     </div>
     <form method="POST" action="{{ url_for('admin_events') }}" class="space-y-5">
       {{ form.hidden_tag() }}
       <div class="grid md:grid-cols-2 gap-5">
         <div>
-          <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.title.label }}</label>
+          <label class="block text-sm font-semibold text-md-on-surface mb-2">{{ form.title.label }}</label>
           {{ form.title(class="input-md w-full", placeholder="Ej. Examen final") }}
         </div>
         <div>
-          <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.description.label }}</label>
+          <label class="block text-sm font-semibold text-md-on-surface mb-2">{{ form.description.label }}</label>
           {{ form.description(class="input-md w-full", rows=1, placeholder="Breve descripción") }}
         </div>
       </div>
-      <div class="flex flex-wrap gap-6">
-        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-2xl bg-md-surface-variant/50 hover:bg-md-surface-variant transition">
+      <div class="flex flex-wrap gap-4">
+        <label class="flex items-center gap-3 cursor-pointer px-4 py-3 rounded-2xl bg-md-surface-container hover:bg-md-surface-high border border-md-outline-variant/60 transition">
           {{ form.allow_multiple_signups(class="w-5 h-5 accent-md-primary rounded") }}
-          <span class="text-sm text-md-on-primary-container font-medium">{{ form.allow_multiple_signups.label.text }}</span>
+          <span class="text-sm text-md-on-surface font-semibold">{{ form.allow_multiple_signups.label.text }}</span>
         </label>
-        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-2xl bg-md-surface-variant/50 hover:bg-md-surface-variant transition">
+        <label class="flex items-center gap-3 cursor-pointer px-4 py-3 rounded-2xl bg-md-surface-container hover:bg-md-surface-high border border-md-outline-variant/60 transition">
           {{ form.show_attendees_publicly(class="w-5 h-5 accent-md-primary rounded") }}
-          <span class="text-sm text-md-on-primary-container font-medium">{{ form.show_attendees_publicly.label.text }}</span>
+          <span class="text-sm text-md-on-surface font-semibold">{{ form.show_attendees_publicly.label.text }}</span>
         </label>
       </div>
       <div class="flex justify-end">
-        <button type="submit" class="btn-primary flex items-center gap-2">
+        <button type="submit" class="btn-primary">
           <span class="material-symbols-outlined">event</span>
           {{ form.submit.label.text }}
         </button>
@@ -48,16 +56,16 @@
     <article class="expressive-card p-6 md:p-8" id="event-{{ event.id }}">
       <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div>
-          <h3 class="text-2xl font-bold text-md-on-primary-container">{{ event.title }}</h3>
-          <p class="text-md-secondary mt-1">{{ event.description or 'Sin descripción' }}</p>
+          <h3 class="text-2xl font-extrabold font-display text-md-on-surface">{{ event.title }}</h3>
+          <p class="text-md-on-surface-variant mt-1">{{ event.description or 'Sin descripción' }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <a href="{{ url_for('event_pdf', event_id=event.id) }}" class="p-2.5 rounded-full text-md-primary hover:bg-md-primary-container transition" aria-label="Descargar PDF" title="Descargar PDF">
+          <a href="{{ url_for('event_pdf', event_id=event.id) }}" class="w-11 h-11 rounded-2xl bg-md-secondary-container text-md-on-secondary-container hover:bg-md-primary-container hover:text-md-on-primary-container transition flex items-center justify-center" aria-label="Descargar PDF" title="Descargar PDF">
             <span class="material-symbols-outlined">download</span>
           </a>
           <form method="POST" action="{{ url_for('admin_delete_event', event_id=event.id) }}" onsubmit="return confirm('¿Eliminar este evento y todas sus inscripciones?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="p-2.5 rounded-full text-md-error hover:bg-md-error-container transition" aria-label="Eliminar evento" data-event-id="{{ event.id }}">
+            <button type="submit" class="w-11 h-11 rounded-2xl bg-md-error-container text-md-on-error-container hover:brightness-95 transition flex items-center justify-center" aria-label="Eliminar evento" data-event-id="{{ event.id }}">
               <span class="material-symbols-outlined">delete</span>
             </button>
           </form>
@@ -68,27 +76,27 @@
         <span class="chip bg-md-secondary-container text-md-on-secondary-container">
           {{ 'Varias inscripciones permitidas' if event.allow_multiple_signups else 'Una inscripción por usuario' }}
         </span>
-        <span class="chip bg-md-secondary-container text-md-on-secondary-container">
+        <span class="chip bg-md-tertiary-container text-md-on-tertiary-container">
           {{ 'Asistentes públicos' if event.show_attendees_publicly else 'Asistentes privados' }}
         </span>
       </div>
 
-      <div class="border-t border-md-surface-variant pt-6">
-        <h4 class="text-sm font-bold text-md-on-primary-container mb-4 flex items-center gap-2">
-          <span class="material-symbols-outlined text-md-primary">calendar_today</span>
-          Fechas
+      <div class="border-t border-md-outline-variant/60 pt-6">
+        <h4 class="text-sm font-extrabold font-display text-md-on-surface mb-4 flex items-center gap-2">
+          <span class="material-symbols-outlined icon-filled text-md-primary">calendar_today</span>
+          Horarios programados
         </h4>
         {% if event.dates.count() %}
         <div class="flex flex-wrap gap-3 mb-5">
           {% for ed in event.dates %}
-          <div class="flex flex-col gap-1.5 px-4 py-3 rounded-2xl {{ 'bg-red-100 text-red-900' if ed.available_spots == 0 else 'bg-md-primary-container text-md-on-primary-container' }}">
-            <div class="flex items-center gap-2.5">
+          <div class="flex flex-col gap-1.5 px-4 py-3 rounded-2xl {{ 'bg-md-error-container text-md-on-error-container' if ed.available_spots == 0 else 'bg-md-primary-container text-md-on-primary-container' }}">
+            <div class="flex items-center gap-2.5 flex-wrap">
               <span class="text-sm font-bold">{{ dias_es[ed.date.weekday()][:3] }}, {{ ed.date.day }} {{ meses_corto_es[ed.date.month] }} {{ ed.date.year }}</span>
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 text-xs font-bold">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-md-surface/70 text-md-on-surface text-xs font-bold">
                 <span class="material-symbols-outlined text-[14px]">schedule</span>
                 {{ ed.time }} – {{ ed.end_time }}
               </span>
-              <span class="text-xs opacity-80">{{ ed.taken_spots }}/{{ ed.max_spots }} cupos</span>
+              <span class="text-xs font-semibold opacity-85">{{ ed.taken_spots }}/{{ ed.max_spots }} cupos</span>
               <form method="POST" action="{{ url_for('admin_delete_event_date', event_id=event.id, date_id=ed.id) }}" onsubmit="return confirm('¿Eliminar este horario y todas sus inscripciones?')" class="inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="ml-1 text-current hover:opacity-70">
@@ -97,35 +105,35 @@
               </form>
             </div>
             {% if ed.signups.count() %}
-            <div class="text-xs opacity-90">{{ ed.signups|map(attribute='user.username')|join(', ') }}</div>
+            <div class="text-xs opacity-90 font-medium">{{ ed.signups|map(attribute='user.username')|join(', ') }}</div>
             {% endif %}
           </div>
           {% endfor %}
         </div>
         {% else %}
-        <p class="text-md-secondary text-sm mb-5">Aún no hay horarios agregados.</p>
+        <p class="text-md-on-surface-variant text-sm mb-5">Aún no hay horarios agregados.</p>
         {% endif %}
 
         {% set date_form = date_form_class(prefix='date_' ~ event.id ~ '_') %}
-        <form method="POST" action="{{ url_for('admin_add_event_date', event_id=event.id) }}" class="flex flex-wrap items-end gap-3 p-4 rounded-2xl bg-md-surface-variant/30">
+        <form method="POST" action="{{ url_for('admin_add_event_date', event_id=event.id) }}" class="flex flex-wrap items-end gap-3 p-4 rounded-2xl bg-md-surface-container border border-md-outline-variant/50">
           {{ date_form.hidden_tag() }}
           <div>
-            <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.date.label }}</label>
+            <label class="block text-xs font-semibold text-md-on-surface-variant mb-1">{{ date_form.date.label }}</label>
             {{ date_form.date(class="input-md text-sm py-2 px-3") }}
           </div>
           <div>
-            <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.time.label }}</label>
+            <label class="block text-xs font-semibold text-md-on-surface-variant mb-1">{{ date_form.time.label }}</label>
             {{ date_form.time(class="input-md text-sm py-2 px-3", value="09:00") }}
           </div>
           <div>
-            <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.end_time.label }}</label>
+            <label class="block text-xs font-semibold text-md-on-surface-variant mb-1">{{ date_form.end_time.label }}</label>
             {{ date_form.end_time(class="input-md text-sm py-2 px-3", value="10:00") }}
           </div>
           <div>
-            <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.max_spots.label }}</label>
+            <label class="block text-xs font-semibold text-md-on-surface-variant mb-1">{{ date_form.max_spots.label }}</label>
             {{ date_form.max_spots(class="input-md text-sm py-2 px-3", value=20) }}
           </div>
-          <button type="submit" class="btn-primary text-sm py-2.5 px-4 flex items-center gap-1">
+          <button type="submit" class="btn-primary text-sm py-2.5 px-5">
             <span class="material-symbols-outlined text-sm">add</span>
             {{ date_form.submit.label.text }}
           </button>
@@ -133,10 +141,10 @@
       </div>
     </article>
     {% else %}
-    <div class="text-center py-20 text-md-secondary">
+    <div class="text-center py-20 text-md-on-surface-variant expressive-card">
       <span class="material-symbols-outlined text-6xl mb-4 opacity-50">event_busy</span>
-      <p class="text-xl font-medium">Aún no hay eventos</p>
-      <p class="text-sm">Crea un evento para comenzar.</p>
+      <p class="text-xl font-bold font-display text-md-on-surface">Aún no hay eventos</p>
+      <p class="text-sm mt-1">Crea un evento para comenzar.</p>
     </div>
     {% endfor %}
   </div>

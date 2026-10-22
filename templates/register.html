@@ -4,30 +4,30 @@
 <div class="min-h-[82vh] flex items-center justify-center">
   <div class="w-full max-w-md expressive-card p-8 md:p-10">
     <div class="text-center mb-8">
-      <div class="w-16 h-16 rounded-3xl bg-md-primary-container text-md-on-primary-container flex items-center justify-center mx-auto mb-4">
-        <span class="material-symbols-outlined text-4xl">person_add</span>
+      <div class="w-20 h-20 rounded-[28px] bg-md-tertiary-container text-md-on-tertiary-container flex items-center justify-center mx-auto mb-5 rotate-[3deg] hover:rotate-0 transition-transform">
+        <span class="material-symbols-outlined icon-filled text-4xl">person_add</span>
       </div>
-      <h1 class="text-3xl font-bold tracking-tight text-md-on-primary-container mb-2">Crear cuenta</h1>
-      <p class="text-md-secondary text-sm">Regístrate con tu nombre y un PIN de 4 a 8 dígitos</p>
+      <h1 class="text-3xl font-extrabold font-display tracking-tight text-md-on-surface mb-2">Crear cuenta</h1>
+      <p class="text-md-on-surface-variant text-sm">Regístrate con tu nombre y un PIN de 4 a 8 dígitos</p>
     </div>
     <form method="POST" action="{{ url_for('register') }}" class="space-y-5">
       {{ form.hidden_tag() }}
       <div>
-        <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.username.label }}</label>
+        <label class="block text-sm font-semibold text-md-on-surface mb-2">{{ form.username.label }}</label>
         {{ form.username(class="input-md w-full", placeholder="Ej. Juan Pérez") }}
       </div>
       <div>
-        <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.pin.label }}</label>
+        <label class="block text-sm font-semibold text-md-on-surface mb-2">{{ form.pin.label }}</label>
         {{ form.pin(class="input-md w-full tracking-widest", placeholder="1234", inputmode="numeric", pattern="[0-9]{4,8}", minlength="4", maxlength="8") }}
-        <p class="text-xs text-md-secondary mt-1.5">Solo números, entre 4 y 8 dígitos.</p>
+        <p class="text-xs text-md-on-surface-variant mt-1.5">Solo números, entre 4 y 8 dígitos.</p>
       </div>
-      <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2">
+      <button type="submit" class="btn-primary w-full">
         <span class="material-symbols-outlined">how_to_reg</span>
         {{ form.submit.label.text }}
       </button>
     </form>
-    <div class="mt-6 pt-6 border-t border-md-surface-variant text-center">
-      <a href="{{ url_for('login') }}" class="text-sm font-medium text-md-primary hover:underline inline-flex items-center gap-1">
+    <div class="mt-6 pt-6 border-t border-md-outline-variant/60 text-center">
+      <a href="{{ url_for('login') }}" class="btn-tonal w-full py-3 text-sm">
         <span class="material-symbols-outlined text-base">arrow_back</span>
         Ya tengo cuenta · Iniciar sesión
       </a>

@@ -2,27 +2,35 @@
 {% block title %}Admin · Usuarios · Scheduler{% endblock %}
 {% block content %}
 <div class="space-y-8">
-  <nav class="flex gap-3">
-    <a href="{{ url_for('admin_events') }}" class="chip text-md-secondary hover:bg-md-surface-variant transition">Eventos</a>
-    <a href="{{ url_for('admin_users') }}" class="chip bg-md-primary-container text-md-on-primary-container">Usuarios</a>
+  <nav class="flex gap-2.5">
+    <a href="{{ url_for('admin_events') }}" class="px-5 py-2.5 rounded-full bg-md-surface-high text-md-on-surface-variant hover:bg-md-secondary-container hover:text-md-on-secondary-container font-bold text-sm transition inline-flex items-center gap-2">
+      <span class="material-symbols-outlined text-[18px]">event</span>
+      Eventos
+    </a>
+    <a href="{{ url_for('admin_users') }}" class="px-5 py-2.5 rounded-full bg-md-primary text-md-on-primary font-bold text-sm inline-flex items-center gap-2">
+      <span class="material-symbols-outlined icon-filled text-[18px]">group</span>
+      Usuarios
+    </a>
   </nav>
 
-  <section class="expressive-card p-8">
+  <section class="expressive-card p-6 md:p-8">
     <div class="flex items-center gap-3 mb-6">
-      <span class="material-symbols-outlined text-md-primary text-3xl">person_add</span>
-      <h2 class="text-2xl font-bold text-md-on-primary-container">Crear usuario</h2>
+      <span class="w-11 h-11 rounded-[16px] bg-md-primary-container text-md-on-primary-container flex items-center justify-center">
+        <span class="material-symbols-outlined icon-filled">person_add</span>
+      </span>
+      <h2 class="text-2xl font-extrabold font-display text-md-on-surface">Crear usuario</h2>
     </div>
     <form method="POST" action="{{ url_for('admin_users') }}" class="flex flex-wrap items-end gap-4">
       {{ form.hidden_tag() }}
       <div>
-        <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.username.label }}</label>
+        <label class="block text-sm font-semibold text-md-on-surface mb-2">{{ form.username.label }}</label>
         {{ form.username(class="input-md", placeholder="usuario") }}
       </div>
       <div>
-        <label class="block text-sm font-medium text-md-on-primary-container mb-2">{{ form.password.label }}</label>
+        <label class="block text-sm font-semibold text-md-on-surface mb-2">{{ form.password.label }}</label>
         {{ form.password(class="input-md", value='changeme') }}
       </div>
-      <button type="submit" class="btn-primary flex items-center gap-2">
+      <button type="submit" class="btn-primary">
         <span class="material-symbols-outlined">person_add</span>
         {{ form.submit.label.text }}
       </button>
@@ -32,27 +40,27 @@
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {% for user in users %}
     <div class="expressive-card p-5 flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-md-primary-container text-md-on-primary-container flex items-center justify-center font-bold text-lg">
+      <div class="flex items-center gap-4 min-w-0">
+        <div class="w-12 h-12 rounded-[16px] bg-md-primary-container text-md-on-primary-container flex items-center justify-center font-extrabold font-display text-lg shrink-0">
           {{ user.username[0]|upper }}
         </div>
-        <div>
-          <p class="font-bold text-md-on-primary-container">{{ user.username }}</p>
-          <p class="text-xs text-md-secondary">{{ 'Debe cambiar contraseña' if user.must_change_password else 'Contraseña establecida' }}</p>
+        <div class="min-w-0">
+          <p class="font-bold text-md-on-surface truncate">{{ user.username }}</p>
+          <p class="text-xs text-md-on-surface-variant">{{ 'Debe cambiar contraseña' if user.must_change_password else 'PIN / Contraseña activa' }}</p>
         </div>
       </div>
       <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" onsubmit="return confirm('¿Eliminar este usuario?')">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="p-2 rounded-full text-md-error hover:bg-md-error-container transition">
+        <button type="submit" class="w-10 h-10 rounded-2xl text-md-error hover:bg-md-error-container hover:text-md-on-error-container transition flex items-center justify-center">
           <span class="material-symbols-outlined">delete</span>
         </button>
       </form>
     </div>
     {% else %}
-    <div class="col-span-full text-center py-20 text-md-secondary">
+    <div class="col-span-full text-center py-20 text-md-on-surface-variant expressive-card">
       <span class="material-symbols-outlined text-6xl mb-4 opacity-50">group_off</span>
-      <p class="text-xl font-medium">Aún no hay usuarios</p>
-      <p class="text-sm">Crea usuarios para que se inscriban en los eventos.</p>
+      <p class="text-xl font-bold font-display text-md-on-surface">Aún no hay usuarios</p>
+      <p class="text-sm mt-1">Crea usuarios o comparte el enlace de registro con PIN.</p>
     </div>
     {% endfor %}
   </div>
