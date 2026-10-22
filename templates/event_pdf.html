@@ -102,7 +102,7 @@
 
   {% for ed in event.dates %}
   <div class="date-header">
-    <span>{{ dias_es[ed.date.weekday()] }}, {{ ed.date.day }} de {{ meses_es[ed.date.month] }} de {{ ed.date.year }}</span>
+    <span>{{ dias_es[ed.date.weekday()] }}, {{ ed.date.day }} de {{ meses_es[ed.date.month] }} de {{ ed.date.year }} · {{ ed.time }} a {{ ed.end_time }} hs</span>
     <span>{{ ed.taken_spots }} / {{ ed.max_spots }} cupos</span>
   </div>
 

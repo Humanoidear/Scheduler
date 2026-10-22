@@ -81,11 +81,15 @@
         {% if event.dates.count() %}
         <div class="flex flex-wrap gap-3 mb-5">
           {% for ed in event.dates %}
-          <div class="flex flex-col gap-1 px-4 py-3 rounded-2xl {{ 'bg-red-100 text-red-900' if ed.available_spots == 0 else 'bg-md-primary-container text-md-on-primary-container' }}">
-            <div class="flex items-center gap-3">
+          <div class="flex flex-col gap-1.5 px-4 py-3 rounded-2xl {{ 'bg-red-100 text-red-900' if ed.available_spots == 0 else 'bg-md-primary-container text-md-on-primary-container' }}">
+            <div class="flex items-center gap-2.5">
               <span class="text-sm font-bold">{{ dias_es[ed.date.weekday()][:3] }}, {{ ed.date.day }} {{ meses_corto_es[ed.date.month] }} {{ ed.date.year }}</span>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 text-xs font-bold">
+                <span class="material-symbols-outlined text-[14px]">schedule</span>
+                {{ ed.time }} – {{ ed.end_time }}
+              </span>
               <span class="text-xs opacity-80">{{ ed.taken_spots }}/{{ ed.max_spots }} cupos</span>
-              <form method="POST" action="{{ url_for('admin_delete_event_date', event_id=event.id, date_id=ed.id) }}" onsubmit="return confirm('¿Eliminar esta fecha y todas sus inscripciones?')" class="inline">
+              <form method="POST" action="{{ url_for('admin_delete_event_date', event_id=event.id, date_id=ed.id) }}" onsubmit="return confirm('¿Eliminar este horario y todas sus inscripciones?')" class="inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="ml-1 text-current hover:opacity-70">
                   <span class="material-symbols-outlined text-sm">close</span>
@@ -99,7 +103,7 @@
           {% endfor %}
         </div>
         {% else %}
-        <p class="text-md-secondary text-sm mb-5">Aún no hay fechas agregadas.</p>
+        <p class="text-md-secondary text-sm mb-5">Aún no hay horarios agregados.</p>
         {% endif %}
 
         {% set date_form = date_form_class(prefix='date_' ~ event.id ~ '_') %}
@@ -108,6 +112,14 @@
           <div>
             <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.date.label }}</label>
             {{ date_form.date(class="input-md text-sm py-2 px-3") }}
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.time.label }}</label>
+            {{ date_form.time(class="input-md text-sm py-2 px-3", value="09:00") }}
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.end_time.label }}</label>
+            {{ date_form.end_time(class="input-md text-sm py-2 px-3", value="10:00") }}
           </div>
           <div>
             <label class="block text-xs font-medium text-md-secondary mb-1">{{ date_form.max_spots.label }}</label>

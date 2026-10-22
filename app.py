@@ -12,8 +12,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm, CSRFProtect
 from werkzeug.security import check_password_hash, generate_password_hash
 from weasyprint import HTML
-from wtforms import BooleanField, DateField, IntegerField, PasswordField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, NumberRange, Optional
+from wtforms import BooleanField, DateField, IntegerField, PasswordField, StringField, SubmitField, TextAreaField, TimeField
+from wtforms.validators import DataRequired, NumberRange, Optional, Regexp
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 def _db_uri():
@@ -70,7 +70,7 @@ class Event(db.Model):
     show_attendees_publicly = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    dates = db.relationship("EventDate", backref="event", lazy="dynamic", cascade="all, delete-orphan", order_by="EventDate.date")
+    dates = db.relationship("EventDate", backref="event", lazy="dynamic", cascade="all, delete-orphan", order_by="EventDate.date, EventDate.time")
 
 
 class EventDate(db.Model):
@@ -78,6 +78,8 @@ class EventDate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=False)
     date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.String(20), nullable=False, default="09:00")
+    end_time = db.Column(db.String(20), nullable=False, default="10:00")
     max_spots = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -106,9 +108,18 @@ class Signup(db.Model):
 
 
 class LoginForm(FlaskForm):
-    username = StringField("Usuario", validators=[DataRequired()])
-    password = PasswordField("Contraseña", validators=[DataRequired()])
+    username = StringField("Nombre / Usuario", validators=[DataRequired()])
+    password = PasswordField("PIN / Contraseña", validators=[DataRequired()])
     submit = SubmitField("Iniciar sesión")
+
+
+class RegisterForm(FlaskForm):
+    username = StringField("Nombre", validators=[DataRequired()])
+    pin = PasswordField(
+        "PIN (4 a 8 dígitos)",
+        validators=[DataRequired(), Regexp(r"^\d{4,8}$", message="El PIN debe tener entre 4 y 8 dígitos numéricos")],
+    )
+    submit = SubmitField("Crear cuenta")
 
 
 class ChangePasswordForm(FlaskForm):
@@ -127,8 +138,10 @@ class EventForm(FlaskForm):
 
 class EventDateForm(FlaskForm):
     date = DateField("Fecha", validators=[DataRequired()], format="%Y-%m-%d")
+    time = TimeField("Hora inicio", validators=[DataRequired()], format="%H:%M")
+    end_time = TimeField("Hora fin", validators=[DataRequired()], format="%H:%M")
     max_spots = IntegerField("Cupo máximo", validators=[DataRequired(), NumberRange(min=1)])
-    submit = SubmitField("Agregar fecha")
+    submit = SubmitField("Agregar horario")
 
 
 class UserForm(FlaskForm):
@@ -138,10 +151,8 @@ class UserForm(FlaskForm):
 
 
 def create_admin():
-    admin_username = os.environ.get("ADMIN_USERNAME", "admin")
-    print(f"Admin username: {admin_username}")
-    admin_password = os.environ.get("ADMIN_PASSWORD", "admin")
-    print(f"Admin password: {admin_password}")
+    admin_username = os.environ.get("ADMIN_USERNAME", "admin").strip()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "admin").strip()
     admin = User.query.filter_by(is_admin=True).first()
     if not admin:
         admin = User(
@@ -223,8 +234,36 @@ def login():
             if user.must_change_password:
                 return redirect(url_for("change_password"))
             return redirect(url_for("index"))
-        flash("Usuario o contraseña incorrectos", "error")
+        flash("Nombre o PIN/contraseña incorrectos", "error")
     return render_template("login.html", form=form)
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    form = RegisterForm()
+    if form.validate_on_submit():
+        username = form.username.data.strip()
+        if User.query.filter_by(username=username).first():
+            flash("Ese nombre ya está registrado", "error")
+        else:
+            user = User(
+                username=username,
+                password_hash=generate_password_hash(form.pin.data.strip()),
+                is_admin=False,
+                must_change_password=False,
+            )
+            db.session.add(user)
+            db.session.commit()
+            login_user(user, remember=True)
+            flash("Cuenta creada con éxito", "success")
+            return redirect(url_for("user_events"))
+    elif request.method == "POST":
+        for errs in form.errors.values():
+            for err in errs:
+                flash(err, "error")
+    return render_template("register.html", form=form)
 
 
 @app.route("/logout")
@@ -291,16 +330,21 @@ def admin_add_event_date(event_id):
         abort(404)
     form = EventDateForm(prefix=f"date_{event_id}_")
     if form.validate_on_submit():
+        if form.end_time.data <= form.time.data:
+            flash("La hora de fin debe ser posterior a la hora de inicio", "error")
+            return redirect(url_for("admin_events"))
         event_date = EventDate(
             event_id=event_id,
             date=form.date.data,
+            time=form.time.data.strftime("%H:%M"),
+            end_time=form.end_time.data.strftime("%H:%M"),
             max_spots=form.max_spots.data,
         )
         db.session.add(event_date)
         db.session.commit()
-        flash("Fecha agregada", "success")
+        flash("Fecha y horario agregados", "success")
     else:
-        flash("Fecha o cupo inválidos", "error")
+        flash("Fecha, horario o cupo inválidos", "error")
     return redirect(url_for("admin_events"))
 
 
@@ -370,7 +414,10 @@ def build_calendar(year, month, events, user):
                 "date": ed,
                 "signed_up": bool(ed.signup_for(user)),
             })
+    for s in dates_by_day:
+        dates_by_day[s].sort(key=lambda x: x["date"].time)
     weeks = []
+    agenda_days = []
     for week in locale_calendar.monthdayscalendar(year, month):
         days = []
         for day in week:
@@ -378,12 +425,16 @@ def build_calendar(year, month, events, user):
                 days.append(None)
             else:
                 d = date(year, month, day)
-                days.append({
+                day_items = dates_by_day.get(d.isoformat(), [])
+                day_obj = {
                     "day": day,
                     "date": d,
                     "is_today": d == date.today(),
-                    "event_dates": dates_by_day.get(d.isoformat(), []),
-                })
+                    "event_dates": day_items,
+                }
+                days.append(day_obj)
+                if day_items:
+                    agenda_days.append(day_obj)
         weeks.append(days)
     prev_month = month - 1 if month > 1 else 12
     prev_year = year if month > 1 else year - 1
@@ -395,6 +446,7 @@ def build_calendar(year, month, events, user):
         "month_name": meses[month],
         "weekday_labels": dias,
         "weeks": weeks,
+        "agenda_days": agenda_days,
         "prev_year": prev_year,
         "prev_month": prev_month,
         "next_year": next_year,
@@ -462,7 +514,7 @@ def my_events():
         .join(EventDate)
         .join(Event)
         .filter(Signup.user_id == current_user.id)
-        .order_by(EventDate.date)
+        .order_by(EventDate.date, EventDate.time)
         .all()
     )
     grouped = {}
@@ -503,6 +555,9 @@ def cancel_signup(signup_id):
 def create_app():
     with app.app_context():
         db.create_all()
+        db.session.execute(db.text("ALTER TABLE event_dates ADD COLUMN IF NOT EXISTS time VARCHAR(20) NOT NULL DEFAULT '09:00'"))
+        db.session.execute(db.text("ALTER TABLE event_dates ADD COLUMN IF NOT EXISTS end_time VARCHAR(20) NOT NULL DEFAULT '10:00'"))
+        db.session.commit()
         create_admin()
     return app
 

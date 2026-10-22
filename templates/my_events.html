@@ -4,37 +4,94 @@
 <div class="space-y-6 md:space-y-8">
   <div>
     <h2 class="text-2xl md:text-3xl font-bold text-md-on-primary-container">Mis eventos</h2>
-    <p class="text-md-secondary text-sm md:text-base">Tus inscripciones confirmadas</p>
+    <p class="text-md-secondary text-sm md:text-base">Tus horarios e inscripciones confirmadas</p>
   </div>
 
   {% if grouped %}
     <div class="space-y-4 md:space-y-6">
       {% for event, dates in grouped.items() %}
-      <article class="expressive-card p-4 md:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-3 mb-3 md:mb-4">
+      <article class="expressive-card p-5 md:p-6">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div class="min-w-0 flex-1">
             <h3 class="text-xl md:text-2xl font-bold text-md-on-primary-container truncate">{{ event.title }}</h3>
-            <p class="text-md-secondary text-sm mt-0.5 line-clamp-2">{{ event.description or 'Sin descripción' }}</p>
+            <p class="text-md-secondary text-sm mt-0.5">{{ event.description or 'Sin descripción' }}</p>
           </div>
-          <a href="{{ url_for('user_events') }}#evento-{{ event.id }}" class="px-3 py-2 rounded-full bg-md-primary-container text-md-on-primary-container text-xs md:text-sm font-medium hover:opacity-90 transition flex items-center gap-1 shrink-0">
+          <a href="{{ url_for('user_events') }}#evento-{{ event.id }}" class="px-3.5 py-2 rounded-full bg-md-primary-container text-md-on-primary-container text-xs md:text-sm font-medium hover:opacity-90 transition flex items-center gap-1 shrink-0">
             <span class="material-symbols-outlined text-sm">calendar_month</span>
-            <span class="hidden md:inline">Ver evento</span>
+            <span>Ver en agenda</span>
           </a>
         </div>
 
-        <div class="space-y-2 md:space-y-3">
+        <div class="space-y-2.5">
           {% for ed in dates %}
-          <div class="rounded-2xl p-3 md:p-4 bg-md-primary-container text-md-on-primary-container">
-            <div class="flex items-center gap-3 md:gap-4">
-              <div class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/20 flex flex-col items-center justify-center shrink-0">
-                <span class="text-lg md:text-xl font-bold leading-none">{{ ed.date.day }}</span>
-                <span class="text-[10px] md:text-xs font-medium uppercase">{{ meses_corto_es[ed.date.month] }}</span>
+          {% set signup = ed.signup_for(current_user) %}
+          <div class="rounded-2xl p-3.5 md:p-4 bg-md-primary-container/60 border border-md-primary text-md-on-primary-container flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3.5">
+              <div class="w-14 h-14 rounded-2xl bg-md-primary text-white flex flex-col items-center justify-center shrink-0">
+                <span class="text-lg font-bold leading-none">{{ ed.date.day }}</span>
+                <span class="text-[10px] font-bold uppercase mt-0.5">{{ meses_corto_es[ed.date.month] }}</span>
               </div>
               <div>
-                <p class="font-medium text-sm md:text-base">{{ dias_es[ed.date.weekday()] }}</p>
-                <p class="text-xs md:text-sm opacity-80">{{ ed.taken_spots }}/{{ ed.max_spots }} cupos</p>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <p class="font-bold text-sm md:text-base">{{ dias_es[ed.date.weekday()] }}, {{ ed.date.day }} de {{ meses_es[ed.date.month] }}</p>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-md-primary text-white text-xs font-bold">
+                    <span class="material-symbols-outlined text-[14px]">schedule</span>
+                    {{ ed.time }} – {{ ed.end_time }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-3 mt-1 flex-wrap">
+                  <p class="text-xs md:text-sm opacity-80">{{ ed.taken_spots }}/{{ ed.max_spots }} cupos ocupados</p>
+                  {% if event.show_attendees_publicly %}
+                  <button type="button" onclick="document.getElementById('modal-mis-asistentes-{{ ed.id }}').showModal()" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/80 text-md-on-primary-container hover:bg-white transition text-xs font-bold">
+                    <span class="material-symbols-outlined text-[15px]">group</span>
+                    Asistentes ({{ ed.taken_spots }})
+                  </button>
+                  <dialog id="modal-mis-asistentes-{{ ed.id }}" onclick="if(event.target===this)this.close()" class="rounded-[28px] p-0 w-full max-w-md bg-md-surface text-md-on-primary-container shadow-md-3 backdrop:bg-black/40 backdrop:backdrop-blur-xs">
+                    <div class="p-6">
+                      <div class="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                          <h3 class="text-lg font-bold text-md-on-primary-container flex items-center gap-2">
+                            <span class="material-symbols-outlined text-md-primary">group</span>
+                            Asistentes inscritos
+                          </h3>
+                          <p class="text-xs text-md-secondary mt-0.5">
+                            {{ event.title }} · {{ dias_es[ed.date.weekday()] }} {{ ed.date.day }} {{ meses_corto_es[ed.date.month] }} ({{ ed.time }} – {{ ed.end_time }})
+                          </p>
+                        </div>
+                        <button type="button" onclick="this.closest('dialog').close()" class="w-8 h-8 rounded-full hover:bg-md-surface-variant flex items-center justify-center text-md-secondary">
+                          <span class="material-symbols-outlined text-lg">close</span>
+                        </button>
+                      </div>
+                      <ul class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                        {% for s in ed.signups|sort(attribute='user.username') %}
+                        <li class="flex items-center gap-3 p-2.5 rounded-2xl bg-md-primary-container/50">
+                          <span class="w-8 h-8 rounded-xl bg-md-primary text-white text-xs font-bold flex items-center justify-center shrink-0">
+                            {{ s.user.username[0]|upper }}
+                          </span>
+                          <span class="text-sm font-semibold text-md-on-primary-container">{{ s.user.username }}</span>
+                        </li>
+                        {% endfor %}
+                      </ul>
+                      <div class="mt-5 flex justify-end">
+                        <button type="button" onclick="this.closest('dialog').close()" class="px-5 py-2 rounded-full bg-md-primary text-white text-sm font-semibold">
+                          Cerrar
+                        </button>
+                      </div>
+                    </div>
+                  </dialog>
+                  {% endif %}
+                </div>
               </div>
             </div>
+            {% if signup %}
+            <form method="POST" action="{{ url_for('cancel_signup', signup_id=signup.id) }}" onsubmit="return confirm('¿Cancelar tu inscripción?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-full border-2 border-md-error text-md-error hover:bg-md-error-container text-xs font-bold transition flex items-center justify-center gap-1 min-h-[40px]">
+                <span class="material-symbols-outlined text-sm">cancel</span>
+                <span>Cancelar</span>
+              </button>
+            </form>
+            {% endif %}
           </div>
           {% endfor %}
         </div>
@@ -45,10 +102,10 @@
     <div class="text-center py-16 md:py-20 text-md-secondary expressive-card flex flex-col items-center justify-center p-6">
       <span class="material-symbols-outlined text-5xl md:text-6xl mb-4 opacity-50">event_available</span>
       <p class="text-lg md:text-xl font-medium">Aún no tienes inscripciones</p>
-      <p class="text-sm mb-6">Explora los próximos eventos e inscríbete.</p>
+      <p class="text-sm mb-6">Explora la agenda de eventos e inscríbete en un horario.</p>
       <a href="{{ url_for('user_events') }}" class="btn-primary">
         <span class="material-symbols-outlined">calendar_month</span>
-        Ver eventos
+        Ver agenda y eventos
       </a>
     </div>
   {% endif %}
