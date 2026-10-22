@@ -139,7 +139,9 @@ class UserForm(FlaskForm):
 
 def create_admin():
     admin_username = os.environ.get("ADMIN_USERNAME", "admin")
+    print(f"Admin username: {admin_username}")
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin")
+    print(f"Admin password: {admin_password}")
     admin = User.query.filter_by(is_admin=True).first()
     if not admin:
         admin = User(
