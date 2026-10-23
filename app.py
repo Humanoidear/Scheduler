@@ -571,15 +571,22 @@ def event_pdf(event_id):
 @admin_required
 def export_events():
     events = Event.query.order_by(Event.id).all()
-    payload = {"events": []}
+    payload = {
+        "exported_at": datetime.utcnow().isoformat(),
+        "total_events": len(events),
+        "events": [],
+    }
     for ev in events:
         dates = []
         for ed in sorted(ev.dates, key=lambda x: (x.date, x.time)):
+            users = sorted(s.user.username for s in ed.signups)
             dates.append({
                 "date": ed.date.isoformat(),
                 "time": ed.time,
                 "end_time": ed.end_time,
                 "max_spots": ed.max_spots,
+                "taken_spots": len(users),
+                "users": users,
             })
         payload["events"].append({
             "title": ev.title,
@@ -608,6 +615,8 @@ def import_events():
             flash("El archivo no es un JSON válido", "error")
             return redirect(url_for("admin_events"))
         count = 0
+        created_users = set()
+        restored_signups = 0
         for ev_data in data.get("events", []):
             ev = Event(
                 title=ev_data.get("title", "Evento sin título").strip(),
@@ -627,11 +636,34 @@ def import_events():
                         max_spots=d.get("max_spots", 10),
                     )
                     db.session.add(ed)
+                    db.session.flush()
                 except Exception:
                     continue
+                usernames = d.get("users") or []
+                for idx, uname in enumerate(usernames[: ed.max_spots]):
+                    uname = str(uname).strip()
+                    if not uname:
+                        continue
+                    user = User.query.filter_by(username=uname).first()
+                    if not user:
+                        user = User(
+                            username=uname,
+                            password_hash=_hash_pw("1234"),
+                            must_change_password=True,
+                        )
+                        db.session.add(user)
+                        db.session.flush()
+                        created_users.add(uname)
+                    exists = Signup.query.filter_by(user_id=user.id, event_date_id=ed.id).first()
+                    if not exists:
+                        db.session.add(Signup(user_id=user.id, event_date_id=ed.id))
+                        restored_signups += 1
             count += 1
         db.session.commit()
-        flash(f"Se importaron {count} evento(s)", "success")
+        msg = f"Se importaron {count} evento(s) y {restored_signups} inscripción(es)."
+        if created_users:
+            msg += f" Usuarios nuevos con PIN 1234: {', '.join(sorted(created_users))}."
+        flash(msg, "success")
         return redirect(url_for("admin_events"))
     return render_template("import_events.html")
 
