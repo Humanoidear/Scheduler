@@ -1,4 +1,5 @@
 import os
+import json
 import calendar
 from datetime import date, datetime, timedelta
 from functools import wraps
@@ -51,6 +52,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     must_change_password = db.Column(db.Boolean, default=False, nullable=False)
+    easter_egg_used = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     signups = db.relationship("Signup", backref=db.backref("user", lazy="joined"), lazy="selectin", cascade="all, delete-orphan")
@@ -115,6 +117,16 @@ class Signup(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (db.UniqueConstraint("user_id", "event_date_id", name="unique_user_event_date"),)
+
+
+class EasterEggClick(db.Model):
+    __tablename__ = "easter_egg_clicks"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    event_date_id = db.Column(db.Integer, db.ForeignKey("event_dates.id"), nullable=False, index=True)
+    click_count = db.Column(db.Integer, default=0, nullable=False)
+    tries_used = db.Column(db.Integer, default=0, nullable=False)
+    __table_args__ = (db.UniqueConstraint("user_id", "event_date_id", name="unique_user_easter_click"),)
 
 
 class LoginForm(FlaskForm):
@@ -555,6 +567,75 @@ def event_pdf(event_id):
     return response
 
 
+@app.route("/admin/export-events", methods=["GET"])
+@admin_required
+def export_events():
+    events = Event.query.order_by(Event.id).all()
+    payload = {"events": []}
+    for ev in events:
+        dates = []
+        for ed in sorted(ev.dates, key=lambda x: (x.date, x.time)):
+            dates.append({
+                "date": ed.date.isoformat(),
+                "time": ed.time,
+                "end_time": ed.end_time,
+                "max_spots": ed.max_spots,
+            })
+        payload["events"].append({
+            "title": ev.title,
+            "description": ev.description,
+            "allow_multiple_signups": ev.allow_multiple_signups,
+            "show_attendees_publicly": ev.show_attendees_publicly,
+            "dates": dates,
+        })
+    response = make_response(json.dumps(payload, ensure_ascii=False, indent=2))
+    response.headers["Content-Type"] = "application/json; charset=utf-8"
+    response.headers["Content-Disposition"] = "attachment; filename=eventos-export.json"
+    return response
+
+
+@app.route("/admin/import-events", methods=["GET", "POST"])
+@admin_required
+def import_events():
+    if request.method == "POST":
+        file = request.files.get("file")
+        if not file or not file.filename.endswith(".json"):
+            flash("Sube un archivo .json válido", "error")
+            return redirect(url_for("admin_events"))
+        try:
+            data = json.load(file)
+        except Exception:
+            flash("El archivo no es un JSON válido", "error")
+            return redirect(url_for("admin_events"))
+        count = 0
+        for ev_data in data.get("events", []):
+            ev = Event(
+                title=ev_data.get("title", "Evento sin título").strip(),
+                description=ev_data.get("description", ""),
+                allow_multiple_signups=ev_data.get("allow_multiple_signups", False),
+                show_attendees_publicly=ev_data.get("show_attendees_publicly", False),
+            )
+            db.session.add(ev)
+            db.session.flush()
+            for d in ev_data.get("dates", []):
+                try:
+                    ed = EventDate(
+                        event_id=ev.id,
+                        date=datetime.strptime(d["date"], "%Y-%m-%d").date(),
+                        time=d.get("time", "09:00"),
+                        end_time=d.get("end_time", "10:00"),
+                        max_spots=d.get("max_spots", 10),
+                    )
+                    db.session.add(ed)
+                except Exception:
+                    continue
+            count += 1
+        db.session.commit()
+        flash(f"Se importaron {count} evento(s)", "success")
+        return redirect(url_for("admin_events"))
+    return render_template("import_events.html")
+
+
 @app.route("/signups/<int:signup_id>/cancel", methods=["POST"])
 @login_required
 def cancel_signup(signup_id):
@@ -569,9 +650,149 @@ def cancel_signup(signup_id):
     return redirect(url_for("user_events"))
 
 
+import random
+
+
+def _easter_eligible(ed):
+    """Return a status string; 'ok' when current_user may use the egg on this slot."""
+    if current_user.is_admin:
+        return "admin"
+    if current_user.easter_egg_used:
+        return "already_used"
+    if ed.available_spots > 0:
+        return "not_full"
+    if ed.signup_for(current_user):
+        return "already_signed_up"
+    others = Signup.query.filter(
+        Signup.user_id == current_user.id,
+        Signup.event_date_id != ed.id,
+    ).first()
+    if not others:
+        return "need_signup"
+    return "ok"
+
+
+@app.route("/easter-egg/click", methods=["POST"])
+@login_required
+def easter_egg_click():
+    event_date_id = request.form.get("event_date_id", type=int)
+    ed = db.session.get(EventDate, event_date_id)
+    if not ed:
+        abort(404)
+    status = _easter_eligible(ed)
+    if status != "ok":
+        return {"status": status, "clicks": 0, "trigger": False}
+    click = EasterEggClick.query.filter_by(user_id=current_user.id, event_date_id=ed.id).first()
+    if not click:
+        click = EasterEggClick(user_id=current_user.id, event_date_id=ed.id, click_count=0)
+        db.session.add(click)
+    click.click_count += 1
+    db.session.commit()
+    return {
+        "status": "ok",
+        "clicks": click.click_count,
+        "trigger": click.click_count >= 50,
+        "tries_left": max(0, 5 - click.tries_used),
+    }
+
+
+@app.route("/easter-egg/spin-wheel", methods=["POST"])
+@login_required
+def easter_egg_spin_wheel():
+    event_date_id = request.form.get("event_date_id", type=int)
+    ed = db.session.get(EventDate, event_date_id)
+    if not ed:
+        abort(404)
+    status = _easter_eligible(ed)
+    if status != "ok":
+        return {"status": status, "targets": []}
+    target_signups = list(ed.signups)
+    if not target_signups:
+        return {"status": "no_targets", "targets": []}
+    wheel = random.sample(target_signups, min(5, len(target_signups)))
+    chosen_index = random.randrange(len(wheel))
+    return {
+        "status": "ok",
+        "targets": [s.user.username for s in wheel],
+        "chosen_index": chosen_index,
+        "chosen": wheel[chosen_index].user.username,
+    }
+
+
+@app.route("/easter-egg/spin-slot", methods=["POST"])
+@login_required
+def easter_egg_spin_slot():
+    event_date_id = request.form.get("event_date_id", type=int)
+    ed = db.session.get(EventDate, event_date_id)
+    if not ed:
+        abort(404)
+    status = _easter_eligible(ed)
+    if status != "ok":
+        return {"status": status, "tries_left": 0}
+    click = EasterEggClick.query.filter_by(user_id=current_user.id, event_date_id=ed.id).first()
+    if not click or click.click_count < 50:
+        return {"status": "locked", "tries_left": 0}
+    if click.tries_used >= 5:
+        return {"status": "no_tries", "tries_left": 0}
+    click.tries_used += 1
+    won = random.random() < 0.02
+    if won:
+        click.tries_used = 5
+    db.session.commit()
+    tries_left = 5 - click.tries_used
+    if won:
+        return {"status": "win", "tries_left": 0}
+    symbols = [random.choice(["7", "BAR", "★", "◆", "♣", "♠"]) for _ in range(3)]
+    return {"status": "lose", "tries_left": tries_left, "symbols": symbols}
+
+
+@app.route("/easter-egg/steal", methods=["POST"])
+@login_required
+def easter_egg_steal():
+    event_date_id = request.form.get("event_date_id", type=int)
+    target_username = request.form.get("target_username")
+    ed = db.session.get(EventDate, event_date_id)
+    if not ed:
+        abort(404)
+    status = _easter_eligible(ed)
+    if status != "ok":
+        return {"status": status}
+    target_signup = next((s for s in ed.signups if s.user.username == target_username), None)
+    if not target_signup:
+        return {"status": "target_not_found"}
+    # The thief's own signup (a different date) is cancelled and handed to the victim.
+    own_signup = (
+        Signup.query
+        .join(EventDate, Signup.event_date_id == EventDate.id)
+        .filter(Signup.user_id == current_user.id, Signup.event_date_id != ed.id)
+        .order_by(EventDate.date, EventDate.time)
+        .first()
+    )
+    if not own_signup:
+        return {"status": "need_signup"}
+    own_event_date_id = own_signup.event_date_id
+
+    victim_id = target_signup.user_id
+    victim_already_there = Signup.query.filter_by(user_id=victim_id, event_date_id=own_event_date_id).first()
+    db.session.delete(target_signup)
+    db.session.delete(own_signup)
+    # Victim takes the thief's old slot; thief takes the victim's slot.
+    if not victim_already_there:
+        db.session.add(Signup(user_id=victim_id, event_date_id=own_event_date_id))
+    db.session.add(Signup(user_id=current_user.id, event_date_id=ed.id))
+    current_user.easter_egg_used = True
+    db.session.commit()
+    return {
+        "status": "success",
+        "message": f"¡Cambio hecho! Tomaste el lugar de {target_username} y él/ella toma el tuyo.",
+    }
+
+
 def init_db():
     with app.app_context():
         db.create_all()
+        db.session.execute(db.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS easter_egg_used BOOLEAN NOT NULL DEFAULT FALSE"))
+        db.session.execute(db.text("ALTER TABLE easter_egg_clicks ADD COLUMN IF NOT EXISTS tries_used INTEGER NOT NULL DEFAULT 0"))
         db.session.execute(db.text("ALTER TABLE event_dates ADD COLUMN IF NOT EXISTS time VARCHAR(20) NOT NULL DEFAULT '09:00'"))
         db.session.execute(db.text("ALTER TABLE event_dates ADD COLUMN IF NOT EXISTS end_time VARCHAR(20) NOT NULL DEFAULT '10:00'"))
         db.session.commit()

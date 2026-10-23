@@ -2,7 +2,7 @@
 {% block title %}Admin · Eventos · Scheduler{% endblock %}
 {% block content %}
 <div class="space-y-8">
-  <nav class="flex gap-2.5">
+  <nav class="flex flex-wrap gap-2.5 items-center">
     <a href="{{ url_for('admin_events') }}" class="px-5 py-2.5 rounded-full bg-md-primary text-md-on-primary font-bold text-sm inline-flex items-center gap-2">
       <span class="material-symbols-outlined icon-filled text-[18px]">event</span>
       Eventos
@@ -11,6 +11,16 @@
       <span class="material-symbols-outlined text-[18px]">group</span>
       Usuarios
     </a>
+    <div class="flex gap-2.5 ml-auto">
+      <a href="{{ url_for('export_events') }}" class="px-4 py-2 rounded-full bg-md-tertiary-container text-md-on-tertiary-container font-bold text-xs transition inline-flex items-center gap-1.5 hover:brightness-95">
+        <span class="material-symbols-outlined text-[16px]">download</span>
+        Exportar JSON
+      </a>
+      <a href="{{ url_for('import_events') }}" class="px-4 py-2 rounded-full bg-md-secondary-container text-md-on-secondary-container font-bold text-xs transition inline-flex items-center gap-1.5 hover:brightness-95">
+        <span class="material-symbols-outlined text-[16px]">upload_file</span>
+        Importar JSON
+      </a>
+    </div>
   </nav>
 
   <section class="expressive-card p-6 md:p-8">

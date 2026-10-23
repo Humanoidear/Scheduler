@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Importar eventos · Scheduler{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <div class="expressive-card p-6 md:p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <span class="w-11 h-11 rounded-[16px] bg-md-tertiary-container text-md-on-tertiary-container flex items-center justify-center">
+        <span class="material-symbols-outlined icon-filled">upload_file</span>
+      </span>
+      <h2 class="text-2xl font-extrabold font-display text-md-on-surface">Importar eventos desde JSON</h2>
+    </div>
+    <form method="POST" enctype="multipart/form-data" class="space-y-5">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label class="block text-sm font-semibold text-md-on-surface mb-2">Archivo .json</label>
+        <input type="file" name="file" accept=".json" required class="input-md w-full py-2">
+      </div>
+      <div class="flex gap-3">
+        <a href="{{ url_for('admin_events') }}" class="btn-tonal py-2.5 px-5 text-sm">Cancelar</a>
+        <button type="submit" class="btn-primary py-2.5 px-5 text-sm">
+          <span class="material-symbols-outlined text-sm">upload</span>
+          Importar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

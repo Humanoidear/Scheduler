@@ -29,4 +29,15 @@ El administrador se crea automáticamente desde las variables de entorno `ADMIN_
 - Admin: crea eventos con múltiples fechas, define cupos y decide si los asistentes se muestran públicamente o si un usuario puede inscribirse en varias fechas del mismo evento.
 - Admin: crea usuarios con contraseña inicial común.
 - Admin: descarga un PDF con el listado de inscritos por fecha para cada evento.
+- Admin: exporta e importa eventos en formato JSON desde el panel.
 - Usuario: inicia sesión, cambia la contraseña obligatoriamente en el primer ingreso, se inscribe en fechas desde un calendario y consulta sus inscripciones en "Mis eventos".
+
+## Poblar la base de datos (desarrollo)
+
+Para generar datos de prueba (usuarios, eventos y turnos):
+
+```bash
+docker compose exec web python seed.py
+```
+
+Usuarios de prueba: PIN `1234`. Admin: según variables de entorno.
